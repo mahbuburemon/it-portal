@@ -1,0 +1,475 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ submission.template.title }} - {{ submission.tracking_no }}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/bifpcl.css' %}">
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #000000;
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .print-toolbar {
+            max-width: 900px;
+            margin: 0 auto 15px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-print {
+            background: #008751;
+            color: #ffffff;
+            border: none;
+            padding: 8px 20px;
+            font-weight: 700;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-print:hover {
+            background: #006b40;
+        }
+        .bifpcl-doc-paper {
+            background: #ffffff;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 40px;
+            border: 1px solid #cbd5e1;
+        }
+        .bifpcl-doc-header {
+            text-align: center;
+            border-bottom: 3px solid #008751;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .bifpcl-doc-header h2 {
+            font-size: 15pt;
+            font-weight: 800;
+            color: #0d3b66;
+            margin: 0;
+        }
+        .bifpcl-doc-header h3 {
+            font-size: 10.5pt;
+            font-weight: 600;
+            color: #0d3b66;
+            margin: 3px 0;
+        }
+        .bifpcl-doc-header .web-link {
+            font-size: 10.5pt;
+            font-weight: 700;
+            color: #008751;
+            text-decoration: none;
+        }
+        .bifpcl-form-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: 800;
+            color: #000000;
+            margin: 14px 0 10px 0;
+        }
+        table.doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-bottom: 10px;
+        }
+        table.doc-table th, table.doc-table td {
+            border: 1px solid #000000;
+            padding: 4px 6px;
+            vertical-align: middle;
+        }
+        table.doc-table th {
+            font-weight: 700;
+            background: #ffffff;
+        }
+        .section-heading {
+            font-size: 9.5pt;
+            font-weight: 700;
+            color: #0d3b66;
+            margin: 8px 0 4px 0;
+        }
+        .check-box {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000000;
+            text-align: center;
+            line-height: 11px;
+            font-size: 9px;
+            font-weight: bold;
+            vertical-align: middle;
+            margin-right: 3px;
+        }
+        .check-box.checked::before {
+            content: "✓";
+        }
+        .sig-block-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-top: 15px;
+        }
+        .sig-block-table th {
+            border: 1px solid #000000;
+            padding: 5px;
+            text-align: left;
+            width: 33.33%;
+            background: #f8fafc;
+            font-weight: 700;
+        }
+        .sig-block-table td {
+            border: 1px solid #000000;
+            padding: 8px;
+            vertical-align: top;
+            height: 75px;
+            font-size: 8.5pt;
+        }
+        .footer-control {
+            display: flex;
+            justify-content: space-between;
+            font-size: 7.5pt;
+            color: #000000;
+            margin-top: 15px;
+            border-top: 1px solid #000000;
+            padding-top: 4px;
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .print-toolbar {
+                display: none !important;
+            }
+            .bifpcl-doc-paper {
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Printable Action Toolbar -->
+    <div class="print-toolbar no-print">
+        <a href="{% url 'main_dashboard' %}" style="text-decoration: none; color: #0d3b66; font-size: 9pt;">
+            &larr; Back to Dashboard
+        </a>
+        <div>
+            <span style="font-size: 9pt; color: #64748b; margin-right: 15px;">Tracking: <strong>{{ submission.tracking_no }}</strong></span>
+            <button onclick="window.print()" class="btn-print">&#128438; Print / Save PDF</button>
+        </div>
+    </div>
+
+    <!-- Official BIFPCL Document Paper Sheet -->
+    <div class="bifpcl-doc-paper">
+        <!-- Header -->
+        <div class="bifpcl-doc-header">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                <img src="{% static 'img/logo.svg' %}" alt="BIFPCL Logo" width="55" height="55">
+                <div>
+                    <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
+                    <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>
+                    <div class="web-link">www.bifpcl.com</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Title -->
+        <div class="bifpcl-form-title">{{ submission.template.title }}</div>
+
+        <!-- Metadata Table -->
+        <table class="doc-table">
+            <tbody>
+                <tr>
+                    <th style="width: 22%;">Work Request No.</th>
+                    <td style="width: 28%;">{{ submission.work_request_no|default:"" }}</td>
+                    <th style="width: 22%;">Report Date</th>
+                    <td style="width: 28%;">{{ submission.report_date|date:"d/m/Y" }}</td>
+                </tr>
+                {% for key, fld in submission.equipment_data.items %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                        <tr>
+                    {% endif %}
+                        <th>{{ fld.label }}</th>
+                        <td>{{ fld.value|default:"" }}</td>
+                    {% if forloop.counter|divisibleby:2 or forloop.last %}
+                        {% if forloop.last and not forloop.counter|divisibleby:2 %}
+                            <th></th><td></td>
+                        {% endif %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+                <tr>
+                    <th>Outage Reported At</th>
+                    <td>{{ submission.outage_reported_at|date:"d/m/Y H:i"|default:"" }}</td>
+                    <th>Site Arrival At</th>
+                    <td>{{ submission.site_arrival_at|date:"d/m/Y H:i"|default:"" }}</td>
+                </tr>
+                <tr>
+                    <th>Restored At</th>
+                    <td>{{ submission.restored_at|date:"d/m/Y H:i"|default:"" }}</td>
+                    <th>Total Downtime</th>
+                    <td>{{ submission.total_downtime|default:"" }}</td>
+                </tr>
+                <tr>
+                    <th>Reported By</th>
+                    <td>{{ submission.reported_by|default:"" }}</td>
+                    <th>Contact No.</th>
+                    <td>{{ submission.contact_no|default:"" }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Section 1: Inspection and Diagnostic Checklist -->
+        <div class="section-heading">Inspection and Diagnostic Checklist</div>
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Inspection Item</th>
+                    <th style="width: 7%; text-align: center;">Yes</th>
+                    <th style="width: 7%; text-align: center;">No</th>
+                    <th style="width: 7%; text-align: center;">N/A</th>
+                    <th style="width: 29%;">Reading / Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_id, item in submission.diagnostics_data.items %}
+                    <tr>
+                        <td>{{ item.text }}</td>
+                        <td style="text-align: center;">
+                            <span class="check-box {% if item.status == 'Yes' %}checked{% endif %}"></span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="check-box {% if item.status == 'No' %}checked{% endif %}"></span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="check-box {% if item.status == 'N/A' %}checked{% endif %}"></span>
+                        </td>
+                        <td>{{ item.remarks|default:"" }}</td>
+                    </tr>
+                {% empty %}
+                    {% for item in submission.template.diagnostic_items_schema %}
+                        <tr>
+                            <td>{{ item.text }}</td>
+                            <td style="text-align: center;"><span class="check-box checked"></span></td>
+                            <td style="text-align: center;"><span class="check-box"></span></td>
+                            <td style="text-align: center;"><span class="check-box"></span></td>
+                            <td></td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Section 2: Fault Classification and Action Taken -->
+        <div class="section-heading">Fault Classification and Action Taken</div>
+        <table class="doc-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%; text-align: center;">Select</th>
+                    <th style="width: 44%;">Outcome (tick one only)</th>
+                    <th style="width: 48%;">Details / Action Taken</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for opt in submission.template.fault_options_schema %}
+                    <tr>
+                        <td style="text-align: center;">
+                            <span class="check-box {% if submission.fault_selected == opt.key %}checked{% endif %}"></span>
+                        </td>
+                        <td>
+                            <strong>{{ opt.label }}</strong><br>
+                            <span style="font-size: 7.5pt; color: #333333;">{{ opt.desc }}</span>
+                        </td>
+                        {% if forloop.first %}
+                            <td rowspan="{{ submission.template.fault_options_schema|length }}" style="vertical-align: top;">
+                                {{ submission.action_taken_details|linebreaksbr }}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Section 3: Materials, Warranty and Disposal -->
+        {% if submission.template.materials_enabled %}
+            <div class="section-heading">Materials, Warranty and Disposal</div>
+            <table class="doc-table">
+                <thead>
+                    <tr>
+                        <th style="width: 6%; text-align: center;">Sl.</th>
+                        <th style="width: 44%;">Material / Spare Description</th>
+                        <th style="width: 25%;">Material Code / Model</th>
+                        <th style="width: 8%; text-align: center;">Qty</th>
+                        <th style="width: 17%;">Store Issue Ref.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in submission.materials_data %}
+                        <tr>
+                            <td style="text-align: center;">{{ m.sl }}</td>
+                            <td>{{ m.desc }}</td>
+                            <td>{{ m.model }}</td>
+                            <td style="text-align: center;">{{ m.qty }}</td>
+                            <td>{{ m.ref }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td style="text-align: center;">1</td>
+                            <td></td><td></td><td style="text-align: center;"></td><td></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">2</td>
+                            <td></td><td></td><td style="text-align: center;"></td><td></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table class="doc-table">
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>Faulty Item Disposal:</strong> &nbsp;
+                            <span class="check-box {% if submission.faulty_item_disposal == 'Store Return' %}checked{% endif %}"></span> Store Return &nbsp;&nbsp;
+                            <span class="check-box {% if submission.faulty_item_disposal == 'Condemnation' %}checked{% endif %}"></span> Condemnation &nbsp;&nbsp;
+                            <span class="check-box {% if submission.faulty_item_disposal == 'Warranty Return' %}checked{% endif %}"></span> Warranty Return &nbsp;&nbsp;
+                            <span class="check-box {% if submission.faulty_item_disposal == 'N/A' %}checked{% endif %}"></span> N/A &nbsp;&nbsp;&nbsp;&nbsp;
+                            <strong>Ref. No.:</strong> <u>{{ submission.disposal_ref_no|default:"__________" }}</u>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Warranty / AMC:</strong> &nbsp;
+                            <span class="check-box {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}"></span> Under Warranty &nbsp;&nbsp;
+                            <span class="check-box {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}"></span> Under AMC &nbsp;&nbsp;
+                            <span class="check-box {% if submission.warranty_status == 'Out of Warranty' %}checked{% endif %}"></span> Out of Warranty &nbsp;&nbsp;&nbsp;&nbsp;
+                            <strong>Vendor / PO Ref.:</strong> <u>{{ submission.vendor_po_ref|default:"__________" }}</u>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% endif %}
+
+        <!-- Section 4: Restoration Verification -->
+        <div class="section-heading">Restoration Verification</div>
+        <table class="doc-table">
+            <tbody>
+                <tr>
+                    <td style="width: 50%;">
+                        {% for v in submission.template.verification_items_schema %}
+                            {% if forloop.counter0|divisibleby:2 %}
+                                <div>
+                                    <span class="check-box {% if v in submission.verification_checks %}checked{% endif %}"></span> {{ v }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td style="width: 50%;">
+                        {% for v in submission.template.verification_items_schema %}
+                            {% if not forloop.counter0|divisibleby:2 %}
+                                <div>
+                                    <span class="check-box {% if v in submission.verification_checks %}checked{% endif %}"></span> {{ v }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <strong>Final Status:</strong> &nbsp;
+                        <span class="check-box {% if submission.final_status == 'Restored and Closed' %}checked{% endif %}"></span> Restored and Closed &nbsp;&nbsp;
+                        <span class="check-box {% if submission.final_status == 'Pending Power Department' %}checked{% endif %}"></span> Pending Power Department &nbsp;&nbsp;
+                        <span class="check-box {% if submission.final_status == 'Pending Replacement' %}checked{% endif %}"></span> Pending Replacement &nbsp;&nbsp;
+                        <span class="check-box {% if submission.final_status == 'Other' %}checked{% endif %}"></span> Other: <u>{{ submission.final_status_other|default:"_________" }}</u>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <strong>Additional Findings / Corrective Action:</strong><br>
+                        <span>{{ submission.additional_findings|default:"Nil" }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Section 5: Exact 3-Column Signature Block -->
+        <table class="sig-block-table">
+            <thead>
+                <tr>
+                    <th>Attended by</th>
+                    <th>Supervised by</th>
+                    <th>Approved by</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <!-- 1. Attended by -->
+                    <td>
+                        <strong>Name &amp; Designation:</strong><br>
+                        {% for m in submission.attended_by.all %}
+                            {{ m.name }} &mdash; <span style="color: #475569;">{{ m.designation }}</span><br>
+                        {% empty %}
+                            <span style="color: #94a3b8; font-style: italic;">(None)</span><br>
+                        {% endfor %}
+                        <strong>Date:</strong> {{ submission.submitted_at|date:"d-m-Y" }}
+                    </td>
+
+
+                    <!-- 2. Supervised by -->
+                    <td>
+                        <strong>Name &amp; Designation:</strong><br>
+                        {% if submission.supervised_by %}
+                            {{ submission.supervised_by.get_full_name|default:submission.supervised_by.username }}<br>
+                            <span style="color: #475569;">Shift IT Supervisor</span><br>
+                            <strong>Date:</strong> {{ submission.supervised_at|date:"d-m-Y" }}
+                            {% if submission.supervisor_remarks %}
+                                <div style="font-size: 7.5pt; color: #1e3a8a; margin-top: 3px;">
+                                    <em>Note: {{ submission.supervisor_remarks }}</em>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic;">(Pending Supervisor Review)</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 3. Approved by -->
+                    <td>
+                        <strong>Name &amp; Designation:</strong><br>
+                        {% if submission.approved_by %}
+                            {{ submission.approved_by.get_full_name|default:submission.approved_by.username }}<br>
+                            <span style="color: #475569;">Assistant Manager / Deputy Manager</span><br>
+                            <strong>Date:</strong> {{ submission.approved_at|date:"d-m-Y" }}
+                            {% if submission.manager_remarks %}
+                                <div style="font-size: 7.5pt; color: #065f46; margin-top: 3px;">
+                                    <em>Note: {{ submission.manager_remarks }}</em>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic;">(Pending Final Approval)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Document Control Footer -->
+        <div class="footer-control">
+            <div><strong>Doc No:</strong> {{ submission.template.doc_no }} &nbsp;&nbsp;&nbsp; <strong>Rev:</strong> {{ submission.template.revision }}</div>
+            <div><strong>Effective Date:</strong> {{ submission.template.effective_date|date:"d-m-Y" }}</div>
+            <div><strong>Retention:</strong> {{ submission.template.retention_period }}</div>
+            <div><strong>Page</strong> 1 of 1</div>
+        </div>
+    </div>
+
+</body>
+</html>

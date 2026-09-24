@@ -1,0 +1,530 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template.title }} | BIFPCL IT Checklists{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Top breadcrumb / navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <a href="{% url 'main_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Main Dashboard
+        </a>
+        <div class="badge bg-light text-secondary border px-3 py-2">
+            <i class="bi bi-shield-check text-success me-1"></i> Public IT Technician Form (No Login Required)
+        </div>
+    </div>
+
+    <!-- The Paper Document Container -->
+    <div class="bifpcl-doc-paper shadow">
+        <form method="post" id="checklistForm">
+            {% csrf_token %}
+
+            <!-- Document Official Header -->
+            <div class="bifpcl-doc-header">
+                <div class="d-flex align-items-center justify-content-center gap-3 mb-2">
+                    <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="56" height="56">
+                    <div>
+                        <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
+                        <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>
+                        <a href="https://www.bifpcl.com" target="_blank" class="web-link">www.bifpcl.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Title -->
+            <h1 class="bifpcl-form-title">{{ template.title }}</h1>
+
+            <!-- Header & Outage Information Table -->
+            <table class="bifpcl-table">
+                <tbody>
+                    <tr>
+                        <th style="width: 20%;">Work Request No.</th>
+                        <td style="width: 30%;">
+                            <input type="text" name="work_request_no" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. WR-2026-089">
+                        </td>
+                        <th style="width: 20%;">Report Date</th>
+                        <td style="width: 30%;">
+                            <input type="date" name="report_date" value="{{ today }}"
+                                class="form-control form-control-sm border-0 p-0" required>
+                        </td>
+                    </tr>
+
+                    <!-- Dynamic Equipment Fields -->
+                    {% for field in template.equipment_fields_schema %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                    <tr>
+                    {% endif %}
+                        <th>{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</th>
+                        <td>
+                            <input type="text" name="eq_{{ field.key }}"
+                                class="form-control form-control-sm border-0 p-0"
+                                placeholder="{{ field.placeholder|default:'' }}" {% if field.required %}required{% endif %}>
+                        </td>
+                        {% if forloop.counter|divisibleby:2 or forloop.last %}
+                        {% if forloop.last and not forloop.counter|divisibleby:2 %}
+                        <th></th>
+                        <td></td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+
+                    <tr>
+                        <th>Outage Reported At</th>
+                        <td>
+                            <input type="datetime-local" id="outageReportedAt" name="outage_reported_at"
+                                class="form-control form-control-sm border-0 p-0">
+                        </td>
+                        <th>Site Arrival At</th>
+                        <td>
+                            <input type="datetime-local" name="site_arrival_at"
+                                class="form-control form-control-sm border-0 p-0">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Restored At</th>
+                        <td>
+                            <input type="datetime-local" id="restoredAt" name="restored_at"
+                                class="form-control form-control-sm border-0 p-0">
+                        </td>
+                        <th>Total Downtime</th>
+                        <td>
+                            <input type="text" id="totalDowntime" name="total_downtime"
+                                class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. 1 hr 20 mins (Auto calculated)">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Reported By</th>
+                        <td>
+                            <input type="text" name="reported_by" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. Control Room Officer">
+                        </td>
+                        <th>Contact No.</th>
+                        <td>
+                            <input type="text" name="contact_no" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. Ext: 2104 / 01700-000000">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Section 1: Inspection and Diagnostic Checklist -->
+            <div class="bifpcl-section-header">Inspection and Diagnostic Checklist</div>
+            <table class="bifpcl-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Inspection Item</th>
+                        <th style="width: 8%; text-align: center;">Yes</th>
+                        <th style="width: 8%; text-align: center;">No</th>
+                        <th style="width: 8%; text-align: center;">N/A</th>
+                        <th style="width: 26%;">Reading / Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in template.diagnostic_items_schema %}
+                    <tr>
+                        <td>{{ forloop.counter }}. {{ item.text }}</td>
+                        <td class="text-center">
+                            <input type="radio" name="diag_status_{{ item.id }}" value="Yes" class="form-check-input"
+                                checked>
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="diag_status_{{ item.id }}" value="No" class="form-check-input">
+                        </td>
+                        <td class="text-center">
+                            <input type="radio" name="diag_status_{{ item.id }}" value="N/A" class="form-check-input">
+                        </td>
+                        <td>
+                            <input type="text" name="diag_remarks_{{ item.id }}"
+                                class="form-control form-control-sm border-0 p-0" placeholder="Observed status / value">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Section 2: Fault Classification and Action Taken -->
+            <div class="bifpcl-section-header">Fault Classification and Action Taken</div>
+            <table class="bifpcl-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%; text-align: center;">Select</th>
+                        <th style="width: 42%;">Outcome (tick one only)</th>
+                        <th style="width: 50%;">Details / Action Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for opt in template.fault_options_schema %}
+                    <tr>
+                        <td class="text-center align-middle">
+                            <input type="radio" name="fault_selected" value="{{ opt.key }}" id="fault_{{ opt.key }}"
+                                class="form-check-input" {% if forloop.first %}checked{% endif %}>
+                        </td>
+                        <td>
+                            <label for="fault_{{ opt.key }}" class="mb-0 cursor-pointer">
+                                <strong>{{ opt.label }}</strong><br>
+                                <span class="text-muted small">{{ opt.desc }}</span>
+                            </label>
+                        </td>
+                        {% if forloop.first %}
+                        <td rowspan="{{ template.fault_options_schema|length }}" class="align-top">
+                            <textarea name="action_taken_details" rows="7" class="form-control form-control-sm border-0"
+                                placeholder="Detailed troubleshooting steps executed, root cause analysis, and corrective actions taken..."
+                                required></textarea>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Section 3: Materials, Warranty and Disposal -->
+            {% if template.materials_enabled %}
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="bifpcl-section-header">Materials, Warranty and Disposal</div>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 no-print" id="addMaterialRowBtn">
+                    <i class="bi bi-plus-circle me-1"></i>Add Row
+                </button>
+            </div>
+            <table class="bifpcl-table" id="materialsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 6%; text-align: center;">Sl.</th>
+                        <th style="width: 44%;">Material / Spare Description</th>
+                        <th style="width: 25%;">Material Code / Model</th>
+                        <th style="width: 10%; text-align: center;">Qty</th>
+                        <th style="width: 15%;">Store Issue Ref.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center">1</td>
+                        <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. Cat6 Patch Cord 3M"></td>
+                        <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. Schneider UTP"></td>
+                        <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1"
+                                class="form-control form-control-sm border-0 p-0 text-center"></td>
+                        <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="e.g. SR-401"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-center">2</td>
+                        <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="Description of spare (if any)"></td>
+                        <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="Code / Model"></td>
+                        <td class="text-center"><input type="number" name="mat_qty[]" min="1"
+                                class="form-control form-control-sm border-0 p-0 text-center"></td>
+                        <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                placeholder="Store Ref"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table class="bifpcl-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 100%;">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <strong class="me-2">Faulty Item Disposal:</strong>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="faulty_item_disposal" value="Store Return"
+                                        class="form-check-input me-1"> Store Return
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="faulty_item_disposal" value="Condemnation"
+                                        class="form-check-input me-1"> Condemnation
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="faulty_item_disposal" value="Warranty Return"
+                                        class="form-check-input me-1"> Warranty Return
+                                </label>
+                                <label class="form-check-label me-3">
+                                    <input type="radio" name="faulty_item_disposal" value="N/A"
+                                        class="form-check-input me-1" checked> N/A
+                                </label>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <span>Ref. No.:</span>
+                                    <input type="text" name="disposal_ref_no"
+                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                        style="width: 150px;">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 100%;">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <strong class="me-2">Warranty / AMC:</strong>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="warranty_status" value="Under Warranty"
+                                        class="form-check-input me-1"> Under Warranty
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="warranty_status" value="Under AMC"
+                                        class="form-check-input me-1"> Under AMC
+                                </label>
+                                <label class="form-check-label me-3">
+                                    <input type="radio" name="warranty_status" value="Out of Warranty"
+                                        class="form-check-input me-1" checked> Out of Warranty
+                                </label>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <span>Vendor / PO Ref.:</span>
+                                    <input type="text" name="vendor_po_ref"
+                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                        style="width: 180px;">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            {% endif %}
+
+            <!-- Section 4: Restoration Verification -->
+            <div class="bifpcl-section-header">Restoration Verification</div>
+            <table class="bifpcl-table">
+                <tbody>
+                    <tr>
+                        <td style="width: 50%;">
+                            {% for v in template.verification_items_schema %}
+                            {% if forloop.counter0|divisibleby:2 %}
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" name="verification_checks"
+                                    value="{{ v }}" id="verif_{{ forloop.counter }}" checked>
+                                <label class="form-check-label small" for="verif_{{ forloop.counter }}">
+                                    {{ v }}
+                                </label>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td style="width: 50%;">
+                            {% for v in template.verification_items_schema %}
+                            {% if not forloop.counter0|divisibleby:2 %}
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" name="verification_checks"
+                                    value="{{ v }}" id="verif_{{ forloop.counter }}" checked>
+                                <label class="form-check-label small" for="verif_{{ forloop.counter }}">
+                                    {{ v }}
+                                </label>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <strong class="me-1">Final Status:</strong>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="final_status" value="Restored and Closed"
+                                        class="form-check-input me-1" checked> Restored and Closed
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="final_status" value="Pending Power Department"
+                                        class="form-check-input me-1"> Pending Power Department
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="final_status" value="Pending Replacement"
+                                        class="form-check-input me-1"> Pending Replacement
+                                </label>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <label class="form-check-label me-1">
+                                        <input type="radio" name="final_status" value="Other"
+                                            class="form-check-input me-1"> Other:
+                                    </label>
+                                    <input type="text" name="final_status_other"
+                                        class="form-control form-control-sm border-bottom border-0 rounded-0"
+                                        style="width: 140px;">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <strong>Additional Findings / Corrective Action:</strong>
+                            <textarea name="additional_findings" rows="2"
+                                class="form-control form-control-sm border-0 mt-1"
+                                placeholder="Enter any secondary observations, recommendations, or recurring fault notes..."></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Section 5: Official 3-Stage Signature Block -->
+            <div class="bifpcl-section-header">Signatures & Approvals</div>
+            <table class="signature-box-table">
+                <thead>
+                    <tr>
+                        <th>Attended by</th>
+                        <th>Supervised by</th>
+                        <th>Approved by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <!-- 1. Attended By: Multiple IT Team Member Selection -->
+                        <td class="bg-success-subtle bg-opacity-25">
+                            <span class="sig-status-badge bg-success text-white">Technician Sign-off</span>
+                            <div class="mt-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="small fw-bold text-dark mb-0">
+                                        Attended By (Select 1 or more) <span class="text-danger">*</span>:
+                                    </label>
+                                    <span id="selectedCountBadge" class="badge bg-secondary">0 selected</span>
+                                </div>
+                                <div class="border rounded bg-white p-2" style="max-height: 180px; overflow-y: auto;">
+                                    {% for member in team_members %}
+                                    <div class="form-check py-1 border-bottom border-light">
+                                        <input class="form-check-input attended-checkbox" type="checkbox" name="attended_by" value="{{ member.id }}" id="att_{{ member.id }}">
+                                        <label class="form-check-label small w-100" for="att_{{ member.id }}" style="cursor: pointer;">
+                                            <strong class="text-dark">{{ member.name }}</strong>
+                                            <div class="text-muted" style="font-size: 0.72rem;">{{ member.designation }} ({{ member.employee_id }})</div>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div id="attendedErrorMsg" class="text-danger small mt-1" style="display: none;">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Please select at least one attending IT member.
+                                </div>
+                            </div>
+                            <div class="small text-muted mt-2">
+                                <strong>Date:</strong> {{ today }} (Auto-stamped upon submit)
+                            </div>
+                        </td>
+
+
+                        <!-- 2. Supervised By: Stage 2 Preview -->
+                        <td class="bg-light text-muted">
+                            <span class="sig-status-badge bg-secondary text-white">Supervisor Review</span>
+                            <div class="small mt-2">
+                                <em>Will be signed electronically by 1 of 3 Supervisors upon review & forwarding.</em>
+                            </div>
+                        </td>
+
+                        <!-- 3. Approved By: Stage 3 Preview -->
+                        <td class="bg-light text-muted">
+                            <span class="sig-status-badge bg-secondary text-white">Final Approval</span>
+                            <div class="small mt-2">
+                                <em>Will be signed electronically by the Assistant Manager or Deputy Manager.</em>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Document Footer Control -->
+            <div class="bifpcl-doc-footer">
+                <div><strong>Doc No:</strong> {{ template.doc_no }} &nbsp;&bull;&nbsp; <strong>Rev:</strong> {{
+                    template.revision }}</div>
+                <div><strong>Effective Date:</strong> {{ template.effective_date|date:"d-m-Y" }}</div>
+                <div><strong>Retention:</strong> {{ template.retention_period }}</div>
+                <div><strong>Page:</strong> 1 of 1</div>
+            </div>
+
+            <!-- Submit Action Bar -->
+            <div class="mt-4 pt-3 border-top text-center no-print">
+                <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm rounded-pill">
+                    <i class="bi bi-send-check me-2"></i> Submit Checklist for Supervisor Review
+                </button>
+                <div class="small text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i> Once submitted, this report will immediately appear on the 3
+                    Supervisors' Dashboard.
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Automatic Downtime Calculator between Outage Reported At and Restored At
+    const outageInput = document.getElementById('outageReportedAt');
+    const restoredInput = document.getElementById('restoredAt');
+    const downtimeInput = document.getElementById('totalDowntime');
+
+    function calculateDowntime() {
+        if (outageInput && restoredInput && downtimeInput) {
+            const outageVal = outageInput.value;
+            const restoredVal = restoredInput.value;
+            if (outageVal && restoredVal) {
+                const diffMs = new Date(restoredVal) - new Date(outageVal);
+                if (diffMs > 0) {
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const hours = Math.floor(diffMins / 60);
+                    const mins = diffMins % 60;
+                    if (hours > 0) {
+                        downtimeInput.value = `${hours} hr ${mins} mins (${diffMins} min total)`;
+                    } else {
+                        downtimeInput.value = `${mins} mins`;
+                    }
+                }
+            }
+        }
+    }
+
+    if (outageInput && restoredInput) {
+        outageInput.addEventListener('change', calculateDowntime);
+        restoredInput.addEventListener('change', calculateDowntime);
+    }
+
+    // Dynamic row addition for Spares & Materials
+    const addRowBtn = document.getElementById('addMaterialRowBtn');
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', function () {
+            const table = document.getElementById('materialsTable').getElementsByTagName('tbody')[0];
+            const rowCount = table.rows.length + 1;
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td class="text-center">${rowCount}</td>
+                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="Material / Spare Description"></td>
+                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Code / Model"></td>
+                <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+            `;
+        });
+    }
+
+    // Attended By Multiple Selection Counter & Validation
+    const attendedCheckboxes = document.querySelectorAll('.attended-checkbox');
+    const selectedBadge = document.getElementById('selectedCountBadge');
+    const attendedError = document.getElementById('attendedErrorMsg');
+    const form = document.getElementById('checklistForm');
+
+    function updateAttendedCount() {
+        const checkedCount = document.querySelectorAll('.attended-checkbox:checked').length;
+        if (selectedBadge) {
+            selectedBadge.textContent = `${checkedCount} selected`;
+            if (checkedCount > 0) {
+                selectedBadge.className = 'badge bg-success';
+                if (attendedError) attendedError.style.display = 'none';
+            } else {
+                selectedBadge.className = 'badge bg-secondary';
+            }
+        }
+    }
+
+    attendedCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateAttendedCount);
+    });
+
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            const checkedCount = document.querySelectorAll('.attended-checkbox:checked').length;
+            if (checkedCount === 0) {
+                e.preventDefault();
+                if (attendedError) {
+                    attendedError.style.display = 'block';
+                    attendedError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

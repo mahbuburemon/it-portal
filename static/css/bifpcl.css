@@ -1,0 +1,253 @@
+/* BIFPCL IT Checklists System Styling */
+:root {
+    --bifpcl-primary: #0d3b66;
+    --bifpcl-primary-dark: #07223d;
+    --bifpcl-green: #008751;
+    --bifpcl-green-light: #e8f5e9;
+    --bifpcl-accent: #f4a261;
+    --bifpcl-danger: #e63946;
+    --bifpcl-slate: #1e293b;
+    --bifpcl-gray-100: #f8fafc;
+    --bifpcl-gray-200: #e2e8f0;
+    --bifpcl-gray-300: #cbd5e1;
+    --bifpcl-gray-600: #475569;
+    --bifpcl-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --bifpcl-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #f1f5f9;
+    color: #1e293b;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header & Navigation */
+.navbar-bifpcl {
+    background: linear-gradient(135deg, #0d3b66 0%, #082645 100%);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    border-bottom: 3px solid var(--bifpcl-green);
+}
+
+.brand-text-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+}
+
+.brand-text-sub {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    letter-spacing: 0.2px;
+}
+
+/* Cards & Grid */
+.checklist-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 1px solid var(--bifpcl-gray-200);
+    border-radius: 10px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.checklist-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--bifpcl-shadow-lg);
+    border-color: var(--bifpcl-green);
+}
+
+.card-doc-badge {
+    background-color: var(--bifpcl-green-light);
+    color: var(--bifpcl-green);
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid rgba(0,135,81,0.25);
+}
+
+.badge-status {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 50rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-submitted {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.status-forwarded {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.status-approved {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-returned {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Document View Layout (Word Replica) */
+.bifpcl-doc-paper {
+    background: #ffffff;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2.5rem 3rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+}
+
+.bifpcl-doc-header {
+    text-align: center;
+    border-bottom: 2px solid var(--bifpcl-green);
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.2rem;
+}
+
+.bifpcl-doc-header h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0d3b66;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.bifpcl-doc-header h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0d3b66;
+    margin: 3px 0;
+}
+
+.bifpcl-doc-header .web-link {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #008751;
+    text-decoration: none;
+}
+
+.bifpcl-form-title {
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #000000;
+    margin: 1.2rem 0;
+    text-transform: capitalize;
+}
+
+/* Formal Document Table styling matching Word */
+.bifpcl-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.2rem;
+    font-size: 0.88rem;
+    border: 1px solid #000000;
+}
+
+.bifpcl-table th, .bifpcl-table td {
+    border: 1px solid #000000;
+    padding: 6px 10px;
+    vertical-align: middle;
+}
+
+.bifpcl-table th {
+    background-color: #f1f5f9;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.bifpcl-section-header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0d3b66;
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+}
+
+/* Three-column signature block */
+.signature-box-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    border: 1px solid #000000;
+}
+
+.signature-box-table th {
+    background-color: #f8fafc;
+    border: 1px solid #000000;
+    padding: 8px;
+    text-align: center;
+    width: 33.33%;
+    font-weight: 700;
+}
+
+.signature-box-table td {
+    border: 1px solid #000000;
+    padding: 12px 10px;
+    vertical-align: top;
+    height: 95px;
+    position: relative;
+}
+
+.sig-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+/* Document Footer */
+.bifpcl-doc-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #475569;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 6px;
+    margin-top: 1.5rem;
+}
+
+/* Print Stylesheet */
+@media print {
+    body {
+        background-color: #ffffff;
+        font-size: 11pt;
+    }
+    .navbar-bifpcl, .btn-action-panel, .no-print, nav, footer.page-footer {
+        display: none !important;
+    }
+    .bifpcl-doc-paper {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .bifpcl-table, .signature-box-table {
+        border: 1px solid #000000 !important;
+    }
+    .bifpcl-table th, .bifpcl-table td, .signature-box-table th, .signature-box-table td {
+        border: 1px solid #000000 !important;
+    }
+}

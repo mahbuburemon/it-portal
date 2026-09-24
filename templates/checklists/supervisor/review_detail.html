@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Supervisor Review: {{ submission.tracking_no }} | BIFPCL{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Status Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <a href="{% url 'supervisor_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 mb-2">
+                <i class="bi bi-arrow-left me-1"></i> Back to Supervisor Queue
+            </a>
+            <h1 class="h4 fw-bold text-dark mb-0">Review Checklist: {{ submission.tracking_no }}</h1>
+            <div class="small text-muted">{{ submission.template.title }} ({{ submission.template.doc_no }})</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge-status status-submitted fs-6">
+                <i class="bi bi-hourglass-split me-1"></i>Stage 2: Supervisor Review
+            </span>
+            <a href="{% url 'checklist_print' submission.id %}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                <i class="bi bi-printer me-1"></i> Print View
+            </a>
+        </div>
+    </div>
+
+    <!-- Review Form & Action Panel -->
+    <div class="row g-4">
+        <!-- Main Document Details Display -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h2 class="h6 fw-bold text-primary mb-0"><i class="bi bi-file-earmark-text me-2"></i>Submitted Checklist Details</h2>
+                </div>
+                <div class="card-body p-4">
+                    <!-- General Metadata Table -->
+                    <table class="table table-bordered table-sm small mb-4">
+                        <tbody>
+                            <tr>
+                                <th class="table-light" style="width: 25%;">Work Request No.</th>
+                                <td style="width: 25%;">{{ submission.work_request_no|default:"N/A" }}</td>
+                                <th class="table-light" style="width: 25%;">Report Date</th>
+                                <td style="width: 25%;">{{ submission.report_date|date:"d M Y" }}</td>
+                            </tr>
+                            {% for key, fld in submission.equipment_data.items %}
+                                <tr>
+                                    <th class="table-light">{{ fld.label }}</th>
+                                    <td colspan="3" class="fw-semibold text-dark">{{ fld.value|default:"Not specified" }}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr>
+                                <th class="table-light">Outage Reported At</th>
+                                <td>{{ submission.outage_reported_at|date:"d-m-Y H:i"|default:"N/A" }}</td>
+                                <th class="table-light">Site Arrival At</th>
+                                <td>{{ submission.site_arrival_at|date:"d-m-Y H:i"|default:"N/A" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Restored At</th>
+                                <td>{{ submission.restored_at|date:"d-m-Y H:i"|default:"N/A" }}</td>
+                                <th class="table-light">Total Downtime</th>
+                                <td class="fw-bold text-danger">{{ submission.total_downtime|default:"N/A" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="table-light">Reported By</th>
+                                <td>{{ submission.reported_by|default:"N/A" }}</td>
+                                <th class="table-light">Contact No.</th>
+                                <td>{{ submission.contact_no|default:"N/A" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Inspection and Diagnostic Checklist -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Inspection and Diagnostic Checklist</h3>
+                    <table class="table table-bordered table-sm small mb-4">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Inspection Item</th>
+                                <th class="text-center" style="width: 80px;">Status</th>
+                                <th>Reading / Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item_id, item in submission.diagnostics_data.items %}
+                                <tr>
+                                    <td class="text-muted">{{ forloop.counter }}</td>
+                                    <td>{{ item.text }}</td>
+                                    <td class="text-center">
+                                        {% if item.status == 'Yes' %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% elif item.status == 'No' %}
+                                            <span class="badge bg-danger">No</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-secondary">{{ item.remarks|default:"—" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Fault Classification and Action Taken -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Fault Classification & Action Taken</h3>
+                    <div class="bg-light p-3 rounded border mb-4">
+                        <div class="mb-2">
+                            <span class="small text-muted d-block">Selected Fault Classification:</span>
+                            <span class="badge bg-dark px-3 py-2 fs-6">{{ submission.fault_selected|title|default:"Standard Rectification" }}</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="small text-muted d-block">Action Taken Details:</span>
+                            <p class="mb-0 text-dark font-monospace small bg-white p-2 rounded border">{{ submission.action_taken_details|linebreaks }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Materials & Spares -->
+                    {% if submission.materials_data %}
+                        <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Materials, Warranty & Disposal</h3>
+                        <table class="table table-bordered table-sm small mb-3">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sl.</th>
+                                    <th>Material / Spare Description</th>
+                                    <th>Model / Code</th>
+                                    <th class="text-center">Qty</th>
+                                    <th>Store Ref</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in submission.materials_data %}
+                                    <tr>
+                                        <td>{{ m.sl }}</td>
+                                        <td>{{ m.desc }}</td>
+                                        <td>{{ m.model|default:"—" }}</td>
+                                        <td class="text-center">{{ m.qty }}</td>
+                                        <td>{{ m.ref|default:"—" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <div class="small text-muted mb-4">
+                            <strong>Disposal:</strong> {{ submission.faulty_item_disposal|default:"N/A" }} (Ref: {{ submission.disposal_ref_no|default:"—" }}) &bull; 
+                            <strong>Warranty:</strong> {{ submission.warranty_status|default:"Out of Warranty" }} (PO: {{ submission.vendor_po_ref|default:"—" }})
+                        </div>
+                    {% endif %}
+
+                    <!-- Restoration Verification -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Restoration Verification & Final Status</h3>
+                    <div class="row g-2 mb-3">
+                        {% for check in submission.verification_checks %}
+                            <div class="col-sm-6">
+                                <div class="p-2 border rounded bg-light small">
+                                    <i class="bi bi-check-circle-fill text-success me-1"></i> {{ check }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="p-3 bg-light border rounded small">
+                        <strong>Final Status:</strong> <span class="badge bg-success">{{ submission.final_status }}</span>
+                        {% if submission.final_status_other %} - {{ submission.final_status_other }}{% endif %}
+                        {% if submission.additional_findings %}
+                            <div class="mt-2 text-muted"><strong>Findings:</strong> {{ submission.additional_findings }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supervisor Action Sidebar -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 80px;">
+                <div class="card-header bg-dark text-white py-3">
+                    <h2 class="h6 fw-bold mb-0"><i class="bi bi-person-check-fill me-2"></i>Supervisor Sign-off & Forward</h2>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Stage 1 Info -->
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <div class="small text-muted fw-bold mb-1">Stage 1: Attended By</div>
+                        {% for m in submission.attended_by.all %}
+                            <div class="fw-bold text-dark">{{ m.name }}</div>
+                            <div class="small text-secondary mb-1">{{ m.designation }}</div>
+                        {% empty %}
+                            <div class="text-muted fst-italic">None recorded</div>
+                        {% endfor %}
+                        <div class="small text-muted mt-2 border-top pt-1"><i class="bi bi-calendar3 me-1"></i>{{ submission.submitted_at|date:"d M Y, h:i A" }}</div>
+                    </div>
+
+
+                    <!-- Action Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_supervisor_remarks" class="form-label fw-bold small text-dark">
+                                Supervisor Review Remarks / Notes:
+                            </label>
+                            <textarea name="supervisor_remarks" id="id_supervisor_remarks" rows="4" class="form-control" placeholder="Verified camera feeds restored and latency within tolerance. Forwarded for management sign-off." required></textarea>
+                            <div class="form-text small">Your remarks will be permanently recorded in the official document audit trail.</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="forward" class="btn btn-success fw-bold py-2 shadow-sm">
+                                <i class="bi bi-send-check me-1"></i> Forward to Manager Queue
+                            </button>
+                            <button type="submit" name="action" value="return" class="btn btn-outline-warning text-dark py-2">
+                                <i class="bi bi-arrow-repeat me-1"></i> Return for Correction
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    <div class="small text-secondary">
+                        <i class="bi bi-shield-lock me-1"></i>
+                        Signed as: <strong>{{ user.get_full_name|default:user.username }}</strong><br>
+                        Role: <strong>Shift / Lead Supervisor</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

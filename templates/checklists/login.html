@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Management & Supervisor Login | BIFPCL{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                <div class="p-4 text-center text-white"
+                    style="background: linear-gradient(135deg, #0d3b66 0%, #008751 100%);">
+                    <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="56" height="56"
+                        class="bg-white rounded-circle p-1 mb-2 shadow-sm">
+                    <h2 class="h5 fw-bold mb-1">BIFPCL IT Portal Login</h2>
+                    <div class="small opacity-75">Supervisor & Management Access Only</div>
+                </div>
+
+                <div class="card-body p-4 p-md-5 bg-white">
+                    {% if form.errors %}
+                    <div class="alert alert-danger alert-dismissible fade show small py-2" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill me-1"></i> Invalid username or password. Please try
+                        again.
+                    </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label fw-semibold text-dark small">Username / Employee
+                                ID</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-person text-secondary"></i></span>
+                                <input type="text" name="username" autofocus required id="id_username"
+                                    class="form-control border-start-0" placeholder="e.g. supervisor1 or asst_manager">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="id_password" class="form-label fw-semibold text-dark small">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i
+                                        class="bi bi-lock text-secondary"></i></span>
+                                <input type="password" name="password" required id="id_password"
+                                    class="form-control border-start-0" placeholder="Enter your password">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm rounded-pill mb-3">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Portal
+                        </button>
+                    </form>
+
+                    <!-- Role Guide Box -->
+                    <div class="bg-light p-3 rounded-3 border small">
+                        <div class="fw-bold text-dark mb-1">
+                            <i class="bi bi-shield-lock text-primary me-1"></i> Authorized Login Accounts (5 Users):
+                        </div>
+                        <ul class="mb-0 ps-3 text-secondary">
+                            <li><strong>3 Supervisors:</strong> <code>supervisor1</code>, <code>supervisor2</code>,
+                                <code>supervisor3</code></li>
+                            <li><strong>Assistant Manager:</strong> <code>asst_manager</code></li>
+                            <li><strong>Deputy Manager:</strong> <code>deputy_manager</code></li>
+                        </ul>
+                        <div class="text-muted mt-2 fst-italic">Default password for demo: <code>Bifpcl@2026!</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'main_dashboard' %}" class="small text-muted text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Main Dashboard (Public IT Forms)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

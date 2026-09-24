@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Supervisor Review Dashboard | BIFPCL{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-4 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="h3 fw-bold text-dark mb-0">Supervisor Review Queue</h1>
+                <span class="badge bg-primary px-3 py-1 rounded-pill">Supervisor Role</span>
+            </div>
+            <p class="text-secondary small mb-0 mt-1">
+                Any of the 3 Shift Supervisors can inspect, verify, and forward submitted checklists to the Assistant / Deputy Manager.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'main_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-grid me-1"></i> Public Forms Hub
+            </a>
+            <a href="{% url 'audit_archive' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-archive me-1"></i> Audit Archive
+            </a>
+        </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card shadow-sm border-0 bg-warning-subtle text-warning-emphasis p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase">Awaiting Review</div>
+                        <div class="display-6 fw-bold">{{ pending_count }}</div>
+                        <div class="small">Checklists submitted by IT team</div>
+                    </div>
+                    <div class="fs-1 opacity-50"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase">Forwarded by You</div>
+                        <div class="display-6 fw-bold">{{ forwarded_by_me }}</div>
+                        <div class="small">Sent to Manager approval</div>
+                    </div>
+                    <div class="fs-1 opacity-50"><i class="bi bi-arrow-up-right-circle"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card shadow-sm border-0 bg-light p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase text-muted">Total Processed</div>
+                        <div class="display-6 fw-bold text-dark">{{ total_count }}</div>
+                        <div class="small text-muted">All checklist records</div>
+                    </div>
+                    <div class="fs-1 text-secondary opacity-50"><i class="bi bi-file-earmark-check"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <ul class="nav nav-pills card-header-pills">
+                <li class="nav-item">
+                    <a class="nav-link {% if status_filter == 'SUBMITTED' %}active bg-warning text-dark fw-bold{% else %}text-secondary{% endif %}" href="?status=SUBMITTED">
+                        <i class="bi bi-clock me-1"></i> Pending My Review ({{ pending_count }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if status_filter == 'FORWARDED' %}active bg-primary fw-bold{% else %}text-secondary{% endif %}" href="?status=FORWARDED">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Forwarded to Manager
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if status_filter == 'APPROVED' %}active bg-success fw-bold{% else %}text-secondary{% endif %}" href="?status=APPROVED">
+                        <i class="bi bi-check-circle me-1"></i> Final Approved
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if status_filter == 'ALL' %}active bg-dark fw-bold{% else %}text-secondary{% endif %}" href="?status=ALL">
+                        All Records ({{ total_count }})
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-muted">
+                    <tr>
+                        <th class="ps-4">Tracking Ref</th>
+                        <th>Document / Checklist</th>
+                        <th>Attended By</th>
+                        <th>Submission Time</th>
+                        <th>Current Status</th>
+                        <th>Supervisor Remarks</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in submissions %}
+                        <tr>
+                            <td class="ps-4 font-monospace fw-bold text-primary small">
+                                {{ sub.tracking_no }}
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
+                                <div class="small text-muted">{{ sub.template.doc_no }} &bull; {{ sub.template.category }}</div>
+                            </td>
+                            <td>
+                                {% for m in sub.attended_by.all %}
+                                    <div class="fw-medium text-dark">{{ m.name }}</div>
+                                    <div class="small text-muted" style="font-size: 0.72rem;">{{ m.designation }}</div>
+                                {% empty %}
+                                    <span class="text-muted fst-italic">None</span>
+                                {% endfor %}
+                            </td>
+
+                            <td class="small text-secondary">
+                                {{ sub.submitted_at|date:"d M Y, h:i A" }}
+                            </td>
+                            <td>
+                                {% if sub.status == 'SUBMITTED' %}
+                                    <span class="badge-status status-submitted">
+                                        <i class="bi bi-hourglass-split me-1"></i>Awaiting Review
+                                    </span>
+                                {% elif sub.status == 'FORWARDED' %}
+                                    <span class="badge-status status-forwarded">
+                                        <i class="bi bi-arrow-right-circle me-1"></i>Forwarded to AM/DM
+                                    </span>
+                                {% elif sub.status == 'APPROVED' %}
+                                    <span class="badge-status status-approved">
+                                        <i class="bi bi-check2-all me-1"></i>Approved
+                                    </span>
+                                {% else %}
+                                    <span class="badge-status status-returned">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Returned
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted" style="max-width: 200px;">
+                                {{ sub.supervisor_remarks|truncatechars:40|default:"None recorded" }}
+                            </td>
+                            <td class="text-end pe-4">
+                                {% if sub.status == 'SUBMITTED' %}
+                                    <a href="{% url 'supervisor_review' sub.id %}" class="btn btn-sm btn-primary fw-semibold px-3 rounded-pill shadow-sm">
+                                        <i class="bi bi-search me-1"></i> Review & Forward
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'checklist_detail' sub.id %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill">
+                                        <i class="bi bi-eye me-1"></i> View
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'checklist_print' sub.id %}" target="_blank" class="btn btn-sm btn-outline-dark px-2 rounded-circle ms-1" title="Print Document">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-check-all fs-1 text-success d-block mb-2"></i>
+                                No checklists currently awaiting supervisor review under this filter!
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

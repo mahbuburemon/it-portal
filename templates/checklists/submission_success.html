@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Submission Received | BIFPCL IT Checklists{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 text-center p-4 p-md-5">
+                <div class="mb-3">
+                    <span class="d-inline-flex align-items-center justify-content-center bg-success-subtle text-success rounded-circle" style="width: 80px; height: 80px;">
+                        <i class="bi bi-check-lg fs-1"></i>
+                    </span>
+                </div>
+                <h1 class="h3 fw-bold text-dark mb-2">Checklist Submitted Successfully!</h1>
+                <p class="text-secondary mb-4">
+                    Your report has been logged into the BIFPCL IT Operations System and forwarded to the <strong>Supervisors' Review Queue</strong>.
+                </p>
+
+                <div class="bg-light border rounded-3 p-4 text-start mb-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block">Tracking Reference Number</span>
+                            <span class="fs-5 fw-bold font-monospace text-primary">{{ submission.tracking_no }}</span>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block">Checklist Document</span>
+                            <span class="fw-semibold text-dark">{{ submission.template.title }}</span>
+                            <div class="small text-muted">{{ submission.template.doc_no }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block">Attended & Submitted By</span>
+                            {% for m in submission.attended_by.all %}
+                                <div class="fw-bold text-success">{{ m.name }}</div>
+                                <div class="small text-muted mb-1">{{ m.designation }}</div>
+                            {% empty %}
+                                <span class="text-muted fst-italic">None</span>
+                            {% endfor %}
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="small text-muted d-block">Workflow Status</span>
+                            <span class="badge-status status-submitted">
+                                <i class="bi bi-hourglass-split me-1"></i>Pending Supervisor Review
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Step Indicator -->
+                <div class="p-3 bg-white rounded border mb-4">
+                    <div class="small fw-bold text-secondary text-uppercase mb-3">Workflow Progress</div>
+                    <div class="d-flex justify-content-between align-items-center position-relative">
+                        <div class="text-center flex-fill">
+                            <div class="btn btn-sm btn-success rounded-circle p-2 mb-1"><i class="bi bi-check-lg"></i></div>
+                            <div class="small fw-bold text-success">1. Submitted</div>
+                            <div class="small text-muted">by {{ submission.attended_by_display }}</div>
+                        </div>
+
+                        <div class="text-center flex-fill">
+                            <div class="btn btn-sm btn-outline-warning rounded-circle p-2 mb-1"><i class="bi bi-hourglass"></i></div>
+                            <div class="small fw-bold text-warning">2. Supervisor Review</div>
+                            <div class="small text-muted">3 Supervisors Queue</div>
+                        </div>
+                        <div class="text-center flex-fill">
+                            <div class="btn btn-sm btn-outline-secondary rounded-circle p-2 mb-1"><i class="bi bi-lock"></i></div>
+                            <div class="small fw-bold text-secondary">3. Final Approval</div>
+                            <div class="small text-muted">Asst. / Deputy Mgr</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a href="{% url 'checklist_print' submission.id %}" target="_blank" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="bi bi-printer me-1"></i> Print / Preview Document
+                    </a>
+                    <a href="{% url 'checklist_detail' submission.id %}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-eye me-1"></i> View Submitted Record
+                    </a>
+                    <a href="{% url 'main_dashboard' %}" class="btn btn-success rounded-pill px-4">
+                        <i class="bi bi-house me-1"></i> Return to Main Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
