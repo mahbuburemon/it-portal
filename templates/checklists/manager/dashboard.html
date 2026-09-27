@@ -12,7 +12,8 @@
                 <span class="badge bg-success px-3 py-1 rounded-pill">AM / DM Access</span>
             </div>
             <p class="text-secondary small mb-0 mt-1">
-                Final approval authority for Assistant Manager and Deputy Manager. Either one can provide the Final Approval (<strong>"Approved By"</strong>).
+                Final approval authority for Assistant Manager and Deputy Manager. Either one can provide the Final
+                Approval (<strong>"Approved By"</strong>).
             </p>
         </div>
         <div class="d-flex gap-2">
@@ -70,24 +71,27 @@
         <div class="card-header bg-white py-3">
             <ul class="nav nav-pills card-header-pills">
                 <li class="nav-item">
-                    <a class="nav-link {% if status_filter == 'FORWARDED' %}active bg-primary fw-bold{% else %}text-secondary{% endif %}" href="?status=FORWARDED">
+                    <a class="nav-link {% if status_filter == 'FORWARDED' %}active bg-primary fw-bold{% else %}text-secondary{% endif %}"
+                        href="?status=FORWARDED">
                         <i class="bi bi-hourglass-split me-1"></i> Awaiting Final Sign-Off ({{ pending_approval_count }})
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if status_filter == 'APPROVED' %}active bg-success fw-bold{% else %}text-secondary{% endif %}" href="?status=APPROVED">
+                    <a class="nav-link {% if status_filter == 'APPROVED' %}active bg-success fw-bold{% else %}text-secondary{% endif %}"
+                        href="?status=APPROVED">
                         <i class="bi bi-check-circle-fill me-1"></i> Approved ({{ approved_count }})
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if status_filter == 'ALL' %}active bg-dark fw-bold{% else %}text-secondary{% endif %}" href="?status=ALL">
+                    <a class="nav-link {% if status_filter == 'ALL' %}active bg-dark fw-bold{% else %}text-secondary{% endif %}"
+                        href="?status=ALL">
                         All Records ({{ total_count }})
                     </a>
                 </li>
             </ul>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 bifpcl-datatable" id="managerQueueTable" data-order-col="0" data-order-dir="desc" data-disable-last="true" data-page-length="10">
                 <thead class="table-light small text-muted">
                     <tr>
                         <th class="ps-4">Tracking Ref</th>
@@ -101,69 +105,67 @@
                 </thead>
                 <tbody>
                     {% for sub in submissions %}
-                        <tr>
-                            <td class="ps-4 font-monospace fw-bold text-primary small">
-                                {{ sub.tracking_no }}
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
-                                <div class="small text-muted">{{ sub.template.doc_no }} &bull; {{ sub.template.category }}</div>
-                            </td>
-                            <td>
-                                {% for m in sub.attended_by.all %}
-                                    <div class="fw-medium text-dark">{{ m.name }}</div>
-                                    <div class="small text-muted" style="font-size: 0.72rem;">{{ m.designation }}</div>
-                                {% empty %}
-                                    <span class="text-muted fst-italic">None</span>
-                                {% endfor %}
-                            </td>
+                    <tr>
+                        <td class="ps-4 font-monospace fw-bold text-primary small">
+                            {{ sub.tracking_no }}
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
+                            <div class="small text-muted">{{ sub.template.doc_no }} &bull; {{ sub.template.category }}
+                            </div>
+                        </td>
+                        <td>
+                            {% for m in sub.attended_by.all %}
+                            <div class="fw-medium text-dark">{{ m.name }}</div>
+                            <div class="small text-muted" style="font-size: 0.72rem;">{{ m.designation }}</div>
+                            {% empty %}
+                            <span class="text-muted fst-italic">None</span>
+                            {% endfor %}
+                        </td>
 
-                            <td>
-                                {% if sub.supervised_by %}
-                                    <span class="text-primary fw-semibold">{{ sub.supervised_by.get_full_name|default:sub.supervised_by.username }}</span>
-                                    <div class="small text-muted">{{ sub.supervised_at|date:"d M Y, h:i A" }}</div>
-                                {% else %}
-                                    <span class="text-muted fst-italic">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="small text-secondary" style="max-width: 220px;">
-                                {{ sub.supervisor_remarks|truncatechars:50|default:"No remarks" }}
-                            </td>
-                            <td>
-                                {% if sub.status == 'FORWARDED' %}
-                                    <span class="badge-status status-forwarded">
-                                        <i class="bi bi-arrow-right-circle me-1"></i>Pending Final Approval
-                                    </span>
-                                {% elif sub.status == 'APPROVED' %}
-                                    <span class="badge-status status-approved">
-                                        <i class="bi bi-check2-all me-1"></i>Approved by {{ sub.approved_by.get_full_name|default:sub.approved_by.username }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-light text-dark border">{{ sub.status }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                {% if sub.status == 'FORWARDED' %}
-                                    <a href="{% url 'manager_approve' sub.id %}" class="btn btn-sm btn-success fw-bold px-3 rounded-pill shadow-sm">
-                                        <i class="bi bi-patch-check-fill me-1"></i> Sign & Approve
-                                    </a>
-                                {% else %}
-                                    <a href="{% url 'checklist_detail' sub.id %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill">
-                                        <i class="bi bi-eye me-1"></i> View
-                                    </a>
-                                {% endif %}
-                                <a href="{% url 'checklist_print' sub.id %}" target="_blank" class="btn btn-sm btn-outline-dark px-2 rounded-circle ms-1" title="Print Official Copy">
-                                    <i class="bi bi-printer"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="bi bi-check2-circle fs-1 text-success d-block mb-2"></i>
-                                All forwarded checklists have been approved! The queue is clean.
-                            </td>
-                        </tr>
+                        <td>
+                            {% if sub.supervised_by %}
+                            <span class="text-primary fw-semibold">{{ sub.supervised_by_display }}</span>
+                            <div class="small text-muted">{{ sub.supervised_at|date:"d M Y, h:i A" }}</div>
+                            {% else %}
+                            <span class="text-muted fst-italic">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-secondary" style="max-width: 220px;">
+                            {{ sub.supervisor_remarks|truncatechars:50|default:"No remarks" }}
+                        </td>
+                        <td>
+                            {% if sub.status == 'FORWARDED' %}
+                            <span class="badge-status status-forwarded">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Pending Final Approval
+                            </span>
+                            {% elif sub.status == 'APPROVED' %}
+                            <span class="badge-status status-approved">
+                                <i class="bi bi-check2-all me-1"></i>Approved by {{ sub.approved_by_display }}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-light text-dark border">{{ sub.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if sub.status == 'FORWARDED' %}
+                            <a href="{% url 'manager_approve' sub.id %}"
+                                class="btn btn-sm btn-success fw-bold px-3 rounded-pill shadow-sm">
+                                <i class="bi bi-patch-check-fill me-1"></i> Sign & Approve
+                            </a>
+                            {% else %}
+                            <a href="{% url 'checklist_detail' sub.id %}"
+                                class="btn btn-sm btn-outline-secondary px-3 rounded-pill">
+                                <i class="bi bi-eye me-1"></i> View
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'checklist_print' sub.id %}" target="_blank"
+                                class="btn btn-sm btn-outline-dark px-2 rounded-circle ms-1"
+                                title="Print Official Copy">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

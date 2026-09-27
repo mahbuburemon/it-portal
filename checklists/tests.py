@@ -113,6 +113,13 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertEqual(resp_mgr_as_sup.status_code, 302)
         self.assertEqual(resp_mgr_as_sup.url, reverse('supervisor_dashboard'))
 
+        # Manager cannot access Supervisor dashboard
+        self.client.logout()
+        self.client.login(username='mgr1', password='Password123!')
+        resp_sup_as_mgr = self.client.get(reverse('supervisor_dashboard'))
+        self.assertEqual(resp_sup_as_mgr.status_code, 302)
+        self.assertEqual(resp_sup_as_mgr.url, reverse('manager_dashboard'))
+
     def test_end_to_end_approval_workflow(self):
         """
         Full lifecycle test:
@@ -163,4 +170,141 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertContains(print_resp, 'Rafiqul Islam')
         self.assertContains(print_resp, 'Kazi Rahman')
         self.assertContains(print_resp, 'BIFPCL/IT/F/01')
+
+    def test_returned_checklist_edit_and_resubmit_workflow(self):
+        """
+        Test that when a supervisor returns a checklist:
+        1. Status is RETURNED.
+        2. Dashboard shows 'Edit' button.
+        3. Detail page shows 'Edit & Resubmit' button and return alert.
+        4. Member opens edit form, updates values, and resubmits.
+        5. Status returns to SUBMITTED and awaits supervisor review.
+        """
+        # 1. Create initial submission
+        sub = ChecklistSubmission.objects.create(
+            template=self.template,
+            work_request_no='WR-CORRECTION-01',
+            report_date=timezone.now().date(),
+            status='SUBMITTED',
+            equipment_data={'camera_id': {'label': 'Camera ID / Name', 'value': 'CAM-WRONG'}, 'location': {'label': 'Location', 'value': 'Gate 1'}},
+            diagnostics_data={'1': {'text': 'Item 1', 'status': 'Yes', 'remarks': ''}, '2': {'text': 'Item 2', 'status': 'No', 'remarks': 'Failed'}},
+            fault_selected='minor',
+            action_taken_details='Initial check done',
+            final_status='Pending Replacement'
+        )
+        sub.attended_by.add(self.team_member)
+
+        # 2. Supervisor returns it for correction
+        self.client.login(username='sup1', password='Password123!')
+        return_resp = self.client.post(
+            reverse('supervisor_review', args=[sub.id]),
+            data={'action': 'return', 'supervisor_remarks': 'Please verify camera tag CAM-GATE-01 and update action taken.'}
+        )
+        self.assertEqual(return_resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'RETURNED')
+        self.assertEqual(sub.supervisor_remarks, 'Please verify camera tag CAM-GATE-01 and update action taken.')
+
+        # 3. Main dashboard shows Edit button
+        self.client.logout()
+        dash_resp = self.client.get(reverse('main_dashboard'))
+        self.assertEqual(dash_resp.status_code, 200)
+        self.assertContains(dash_resp, reverse('checklist_edit', args=[sub.id]))
+        self.assertContains(dash_resp, 'Edit')
+
+        # 4. Detail page shows Edit & Resubmit button
+        detail_resp = self.client.get(reverse('checklist_detail', args=[sub.id]))
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertContains(detail_resp, reverse('checklist_edit', args=[sub.id]))
+        self.assertContains(detail_resp, 'Checklist Returned for Correction')
+        self.assertContains(detail_resp, 'Please verify camera tag CAM-GATE-01 and update action taken.')
+
+        # 5. Member accesses the edit form without login
+        edit_resp = self.client.get(reverse('checklist_edit', args=[sub.id]))
+        self.assertEqual(edit_resp.status_code, 200)
+        self.assertContains(edit_resp, 'CAM-WRONG')
+        self.assertContains(edit_resp, 'Please verify camera tag CAM-GATE-01 and update action taken.')
+        self.assertContains(edit_resp, 'Save Changes &amp; Resubmit Checklist')
+
+        # 6. Member updates the values and resubmits
+        resubmit_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-CORRECTION-01',
+            'report_date': '2026-09-24',
+            'eq_camera_id': 'CAM-GATE-01',
+            'eq_location': 'Main Gate Substation',
+            'diag_status_1': 'Yes',
+            'diag_remarks_1': 'Verified correct',
+            'diag_status_2': 'Yes',
+            'diag_remarks_2': 'Replaced and operational',
+            'fault_selected': 'minor',
+            'action_taken_details': 'Replaced camera unit with CAM-GATE-01 and aligned view.',
+            'verification_checks': ['Camera online and live view stable'],
+            'final_status': 'Restored and Closed',
+        }
+        post_resp = self.client.post(reverse('checklist_edit', args=[sub.id]), data=resubmit_data)
+        self.assertEqual(post_resp.status_code, 302)
+
+        # 7. Verify submission is back to SUBMITTED and pending supervisor
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'SUBMITTED')
+        self.assertIsNone(sub.supervised_by)
+        self.assertIsNone(sub.supervised_at)
+        self.assertEqual(sub.equipment_data['camera_id']['value'], 'CAM-GATE-01')
+        self.assertEqual(sub.action_taken_details, 'Replaced camera unit with CAM-GATE-01 and aligned view.')
+
+        # 8. Check that non-returned checklist cannot be edited
+        forbidden_edit_resp = self.client.get(reverse('checklist_edit', args=[sub.id]))
+        self.assertEqual(forbidden_edit_resp.status_code, 302)
+        self.assertEqual(forbidden_edit_resp.url, reverse('checklist_detail', args=[sub.id]))
+
+    def test_optional_remarks_in_review_and_approval(self):
+        """
+        Supervisor and Manager should be able to submit review and approval
+        without entering any remarks or comments (both fields are optional).
+        """
+        sub = ChecklistSubmission.objects.create(
+            template=self.template,
+            work_request_no='WR-OPTIONAL-REMARKS',
+            report_date=timezone.now().date(),
+            status='SUBMITTED'
+        )
+        sub.attended_by.add(self.team_member)
+
+        # 1. Supervisor forwards without remarks
+        self.client.login(username='sup1', password='Password123!')
+        review_page = self.client.get(reverse('supervisor_review', args=[sub.id]))
+        self.assertEqual(review_page.status_code, 200)
+        self.assertContains(review_page, '(Optional)')
+        self.assertNotContains(review_page, 'id="id_supervisor_remarks" rows="4" class="form-control" placeholder="Verified camera feeds restored and latency within tolerance. Forwarded for management sign-off." required')
+
+        forward_resp = self.client.post(
+            reverse('supervisor_review', args=[sub.id]),
+            data={'action': 'forward', 'supervisor_remarks': ''}
+        )
+        self.assertEqual(forward_resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'FORWARDED')
+        self.assertEqual(sub.supervisor_remarks, '')
+        self.assertEqual(sub.supervised_by, self.supervisor)
+
+        # 2. Manager approves without remarks
+        self.client.logout()
+        self.client.login(username='mgr1', password='Password123!')
+        approval_page = self.client.get(reverse('manager_approve', args=[sub.id]))
+        self.assertEqual(approval_page.status_code, 200)
+        self.assertContains(approval_page, '(Optional)')
+        self.assertNotContains(approval_page, 'id="id_manager_remarks" rows="3" class="form-control" placeholder="Verified and approved for permanent archival." required')
+
+        approve_resp = self.client.post(
+            reverse('manager_approve', args=[sub.id]),
+            data={'action': 'approve', 'manager_remarks': ''}
+        )
+        self.assertEqual(approve_resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'APPROVED')
+        self.assertEqual(sub.manager_remarks, '')
+        self.assertEqual(sub.approved_by, self.manager)
+
+
 

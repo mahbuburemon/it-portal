@@ -153,6 +153,18 @@ class ChecklistSubmission(models.Model):
         names = [m.name for m in self.attended_by.all()]
         return ", ".join(names) if names else "None"
 
+    @property
+    def supervised_by_display(self):
+        if self.supervised_by:
+            return self.supervised_by.get_full_name() or self.supervised_by.username
+        return ""
+
+    @property
+    def approved_by_display(self):
+        if self.approved_by:
+            return self.approved_by.get_full_name() or self.approved_by.username
+        return ""
+
     def save(self, *args, **kwargs):
         if not self.tracking_no:
             date_str = timezone.now().strftime('%Y%m%d')

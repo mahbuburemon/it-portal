@@ -24,8 +24,8 @@ def main_dashboard(request):
     templates = ChecklistTemplate.objects.filter(is_active=True).order_by('doc_no')
     categories = ChecklistTemplate.objects.filter(is_active=True).values_list('category', flat=True).distinct()
     
-    # Recent public submissions (last 10)
-    recent_submissions = ChecklistSubmission.objects.select_related('template').prefetch_related('attended_by').order_by('-created_at')[:10]
+    # Recent public submissions (up to 100 with DataTables pagination)
+    recent_submissions = ChecklistSubmission.objects.select_related('template', 'supervised_by', 'approved_by').prefetch_related('attended_by').order_by('-created_at')[:100]
     
     # Stats for today
     today = timezone.now().date()
@@ -42,6 +42,151 @@ def main_dashboard(request):
     return render(request, 'checklists/main_dashboard.html', context)
 
 
+def _extract_submission_data(request, template_obj):
+    attended_by_ids = request.POST.getlist('attended_by')
+    work_request_no = request.POST.get('work_request_no', '').strip()
+    report_date_str = request.POST.get('report_date') or timezone.now().strftime('%Y-%m-%d')
+    reported_by = request.POST.get('reported_by', '').strip()
+    contact_no = request.POST.get('contact_no', '').strip()
+    
+    outage_reported_at = request.POST.get('outage_reported_at') or None
+    site_arrival_at = request.POST.get('site_arrival_at') or None
+    restored_at = request.POST.get('restored_at') or None
+    total_downtime = request.POST.get('total_downtime', '').strip()
+
+    # Dynamic Equipment Data
+    equipment_data = {}
+    for field in template_obj.equipment_fields_schema:
+        val = request.POST.get(f"eq_{field['key']}", '').strip()
+        equipment_data[field['key']] = {
+            'label': field.get('label', field['key']),
+            'value': val
+        }
+
+    # Diagnostic Checklist Items
+    diagnostics_data = {}
+    for item in template_obj.diagnostic_items_schema:
+        item_id = str(item['id'])
+        status_val = request.POST.get(f"diag_status_{item_id}", 'N/A')
+        remarks_val = request.POST.get(f"diag_remarks_{item_id}", '').strip()
+        diagnostics_data[item_id] = {
+            'text': item['text'],
+            'status': status_val,
+            'remarks': remarks_val
+        }
+
+    # Fault Classification & Action Taken
+    fault_selected = request.POST.get('fault_selected', '')
+    action_taken_details = request.POST.get('action_taken_details', '').strip()
+
+    # Materials
+    materials_data = []
+    mat_descs = request.POST.getlist('mat_desc[]')
+    mat_models = request.POST.getlist('mat_model[]')
+    mat_qtys = request.POST.getlist('mat_qty[]')
+    mat_refs = request.POST.getlist('mat_ref[]')
+
+    for i in range(len(mat_descs)):
+        desc = mat_descs[i].strip()
+        if desc:
+            materials_data.append({
+                'sl': i + 1,
+                'desc': desc,
+                'model': mat_models[i].strip() if i < len(mat_models) else '',
+                'qty': mat_qtys[i].strip() if i < len(mat_qtys) else '1',
+                'ref': mat_refs[i].strip() if i < len(mat_refs) else ''
+            })
+
+    faulty_item_disposal = request.POST.get('faulty_item_disposal', '')
+    disposal_ref_no = request.POST.get('disposal_ref_no', '').strip()
+    warranty_status = request.POST.get('warranty_status', '')
+    vendor_po_ref = request.POST.get('vendor_po_ref', '').strip()
+
+    # Restoration Verification & Final Status
+    verification_checks = request.POST.getlist('verification_checks')
+    final_status = request.POST.get('final_status', 'Restored and Closed')
+    final_status_other = request.POST.get('final_status_other', '').strip()
+    additional_findings = request.POST.get('additional_findings', '').strip()
+
+    # Client IP capture
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        client_ip = x_forwarded_for.split(',')[0]
+    else:
+        client_ip = request.META.get('REMOTE_ADDR')
+
+    return {
+        'attended_by_ids': attended_by_ids,
+        'work_request_no': work_request_no,
+        'report_date': report_date_str,
+        'reported_by': reported_by,
+        'contact_no': contact_no,
+        'outage_reported_at': outage_reported_at,
+        'site_arrival_at': site_arrival_at,
+        'restored_at': restored_at,
+        'total_downtime': total_downtime,
+        'equipment_data': equipment_data,
+        'diagnostics_data': diagnostics_data,
+        'fault_selected': fault_selected,
+        'action_taken_details': action_taken_details,
+        'materials_data': materials_data,
+        'faulty_item_disposal': faulty_item_disposal,
+        'disposal_ref_no': disposal_ref_no,
+        'warranty_status': warranty_status,
+        'vendor_po_ref': vendor_po_ref,
+        'verification_checks': verification_checks,
+        'final_status': final_status,
+        'final_status_other': final_status_other,
+        'additional_findings': additional_findings,
+        'client_ip': client_ip,
+    }
+
+
+def _build_form_context(template_obj, submission=None):
+    team_members = TeamMember.objects.filter(is_active=True).order_by('name')
+
+    equipment_fields = []
+    for field in template_obj.equipment_fields_schema:
+        f_copy = dict(field)
+        if submission and submission.equipment_data:
+            eq_entry = submission.equipment_data.get(field['key'])
+            if isinstance(eq_entry, dict):
+                f_copy['current_value'] = eq_entry.get('value', '')
+            else:
+                f_copy['current_value'] = eq_entry or ''
+        else:
+            f_copy['current_value'] = ''
+        equipment_fields.append(f_copy)
+
+    diagnostic_items = []
+    for item in template_obj.diagnostic_items_schema:
+        item_copy = dict(item)
+        item_id_str = str(item['id'])
+        if submission and submission.diagnostics_data and item_id_str in submission.diagnostics_data:
+            diag_entry = submission.diagnostics_data[item_id_str]
+            item_copy['current_status'] = diag_entry.get('status', 'Yes')
+            item_copy['current_remarks'] = diag_entry.get('remarks', '')
+        else:
+            item_copy['current_status'] = 'Yes'
+            item_copy['current_remarks'] = ''
+        diagnostic_items.append(item_copy)
+
+    attended_member_ids = []
+    if submission:
+        attended_member_ids = list(submission.attended_by.values_list('id', flat=True))
+
+    return {
+        'template': template_obj,
+        'team_members': team_members,
+        'equipment_fields': equipment_fields,
+        'diagnostic_items': diagnostic_items,
+        'attended_member_ids': attended_member_ids,
+        'submission': submission,
+        'is_edit': bool(submission),
+        'today': timezone.now().strftime('%Y-%m-%d'),
+    }
+
+
 def checklist_form(request, template_id):
     """
     Interactive online form for any of the 12 BIFPCL Word Checklists.
@@ -49,125 +194,74 @@ def checklist_form(request, template_id):
     fault classification, spares, and restoration verification.
     """
     template_obj = get_object_or_404(ChecklistTemplate, id=template_id, is_active=True)
-    team_members = TeamMember.objects.filter(is_active=True).order_by('name')
 
     if request.method == 'POST':
-        # 1. Attended By (Multiple IT Team Members can attend)
-        attended_by_ids = request.POST.getlist('attended_by')
+        data = _extract_submission_data(request, template_obj)
+        attended_by_ids = data.pop('attended_by_ids')
+
         if not attended_by_ids:
             messages.error(request, "Please select at least one IT team member who Attended this checklist.")
             return redirect('checklist_form', template_id=template_id)
 
-
-        # 2. Header & Outage info
-        work_request_no = request.POST.get('work_request_no', '').strip()
-        report_date_str = request.POST.get('report_date') or timezone.now().strftime('%Y-%m-%d')
-        reported_by = request.POST.get('reported_by', '').strip()
-        contact_no = request.POST.get('contact_no', '').strip()
-        
-        outage_reported_at = request.POST.get('outage_reported_at') or None
-        site_arrival_at = request.POST.get('site_arrival_at') or None
-        restored_at = request.POST.get('restored_at') or None
-        total_downtime = request.POST.get('total_downtime', '').strip()
-
-        # 3. Dynamic Equipment Data
-        equipment_data = {}
-        for field in template_obj.equipment_fields_schema:
-            val = request.POST.get(f"eq_{field['key']}", '').strip()
-            equipment_data[field['key']] = {
-                'label': field.get('label', field['key']),
-                'value': val
-            }
-
-        # 4. Diagnostic Checklist Items (Yes / No / N/A + Reading/Remarks)
-        diagnostics_data = {}
-        for item in template_obj.diagnostic_items_schema:
-            item_id = str(item['id'])
-            status_val = request.POST.get(f"diag_status_{item_id}", 'N/A')
-            remarks_val = request.POST.get(f"diag_remarks_{item_id}", '').strip()
-            diagnostics_data[item_id] = {
-                'text': item['text'],
-                'status': status_val,
-                'remarks': remarks_val
-            }
-
-        # 5. Fault Classification & Action Taken
-        fault_selected = request.POST.get('fault_selected', '')
-        action_taken_details = request.POST.get('action_taken_details', '').strip()
-
-        # 6. Materials, Warranty and Disposal
-        materials_data = []
-        mat_descs = request.POST.getlist('mat_desc[]')
-        mat_models = request.POST.getlist('mat_model[]')
-        mat_qtys = request.POST.getlist('mat_qty[]')
-        mat_refs = request.POST.getlist('mat_ref[]')
-
-        for i in range(len(mat_descs)):
-            desc = mat_descs[i].strip()
-            if desc:
-                materials_data.append({
-                    'sl': i + 1,
-                    'desc': desc,
-                    'model': mat_models[i].strip() if i < len(mat_models) else '',
-                    'qty': mat_qtys[i].strip() if i < len(mat_qtys) else '1',
-                    'ref': mat_refs[i].strip() if i < len(mat_refs) else ''
-                })
-
-        faulty_item_disposal = request.POST.get('faulty_item_disposal', '')
-        disposal_ref_no = request.POST.get('disposal_ref_no', '').strip()
-        warranty_status = request.POST.get('warranty_status', '')
-        vendor_po_ref = request.POST.get('vendor_po_ref', '').strip()
-
-        # 7. Restoration Verification & Final Status
-        verification_checks = request.POST.getlist('verification_checks')
-        final_status = request.POST.get('final_status', 'Restored and Closed')
-        final_status_other = request.POST.get('final_status_other', '').strip()
-        additional_findings = request.POST.get('additional_findings', '').strip()
-
-        # Client IP capture
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            client_ip = x_forwarded_for.split(',')[0]
-        else:
-            client_ip = request.META.get('REMOTE_ADDR')
-
-        # Create submission
         submission = ChecklistSubmission.objects.create(
             template=template_obj,
-            work_request_no=work_request_no,
-            report_date=report_date_str,
-            reported_by=reported_by,
-            contact_no=contact_no,
-            outage_reported_at=outage_reported_at,
-            site_arrival_at=site_arrival_at,
-            restored_at=restored_at,
-            total_downtime=total_downtime,
-            equipment_data=equipment_data,
-            diagnostics_data=diagnostics_data,
-            fault_selected=fault_selected,
-            action_taken_details=action_taken_details,
-            materials_data=materials_data,
-            faulty_item_disposal=faulty_item_disposal,
-            disposal_ref_no=disposal_ref_no,
-            warranty_status=warranty_status,
-            vendor_po_ref=vendor_po_ref,
-            verification_checks=verification_checks,
-            final_status=final_status,
-            final_status_other=final_status_other,
-            additional_findings=additional_findings,
-            client_ip=client_ip,
-            status='SUBMITTED'
+            status='SUBMITTED',
+            **data
         )
         submission.attended_by.set(attended_by_ids)
 
         messages.success(request, f"Checklist submitted successfully! Tracking Reference: {submission.tracking_no}")
         return redirect('submission_success', tracking_no=submission.tracking_no)
 
-    context = {
-        'template': template_obj,
-        'team_members': team_members,
-        'today': timezone.now().strftime('%Y-%m-%d'),
-    }
+    context = _build_form_context(template_obj)
+    return render(request, 'checklists/checklist_form.html', context)
+
+
+def checklist_edit(request, submission_id):
+    """
+    Allow IT team member to edit and resubmit a checklist that was RETURNED by a supervisor/manager.
+    """
+    submission = get_object_or_404(
+        ChecklistSubmission.objects.select_related('template', 'supervised_by', 'approved_by').prefetch_related('attended_by'),
+        id=submission_id
+    )
+
+    if submission.status != 'RETURNED':
+        messages.warning(
+            request,
+            f"Checklist {submission.tracking_no} cannot be edited because its current status is {submission.get_status_display()}. Only returned checklists can be edited."
+        )
+        return redirect('checklist_detail', submission_id=submission.id)
+
+    template_obj = submission.template
+
+    if request.method == 'POST':
+        data = _extract_submission_data(request, template_obj)
+        attended_by_ids = data.pop('attended_by_ids')
+
+        if not attended_by_ids:
+            messages.error(request, "Please select at least one IT team member who Attended this checklist.")
+            return redirect('checklist_edit', submission_id=submission.id)
+
+        # Update all fields on the existing submission
+        for field_name, val in data.items():
+            setattr(submission, field_name, val)
+
+        # Reset status back to SUBMITTED for Supervisor review
+        submission.status = 'SUBMITTED'
+        submission.supervised_by = None
+        submission.supervised_at = None
+        submission.submitted_at = timezone.now()
+        submission.save()
+        submission.attended_by.set(attended_by_ids)
+
+        messages.success(
+            request,
+            f"Checklist {submission.tracking_no} has been successfully updated and resubmitted for Supervisor review!"
+        )
+        return redirect('submission_success', tracking_no=submission.tracking_no)
+
+    context = _build_form_context(template_obj, submission=submission)
     return render(request, 'checklists/checklist_form.html', context)
 
 

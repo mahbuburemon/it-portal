@@ -429,7 +429,7 @@
                     <td>
                         <strong>Name &amp; Designation:</strong><br>
                         {% if submission.supervised_by %}
-                            {{ submission.supervised_by.get_full_name|default:submission.supervised_by.username }}<br>
+                            {{ submission.supervised_by_display }}<br>
                             <span style="color: #475569;">Shift IT Supervisor</span><br>
                             <strong>Date:</strong> {{ submission.supervised_at|date:"d-m-Y" }}
                             {% if submission.supervisor_remarks %}
@@ -446,7 +446,7 @@
                     <td>
                         <strong>Name &amp; Designation:</strong><br>
                         {% if submission.approved_by %}
-                            {{ submission.approved_by.get_full_name|default:submission.approved_by.username }}<br>
+                            {{ submission.approved_by_display }}<br>
                             <span style="color: #475569;">Assistant Manager / Deputy Manager</span><br>
                             <strong>Date:</strong> {{ submission.approved_at|date:"d-m-Y" }}
                             {% if submission.manager_remarks %}

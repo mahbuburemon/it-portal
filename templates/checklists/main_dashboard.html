@@ -10,16 +10,20 @@
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-semibold">
+                    <span
+                        class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-semibold">
                         <i class="bi bi-broadcast me-1"></i> Public IT Submissions Portal (No Login Required)
                     </span>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+                    <span
+                        class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
                         14 Active IT Team Members
                     </span>
                 </div>
                 <h1 class="h3 fw-bold text-dark mb-2">BIFPCL IT Checklist & Maintenance System</h1>
                 <p class="text-secondary mb-0">
-                    Fill out the CCTV inspection and diagnostic items, select your name under <strong>"Attended by"</strong>, and submit. The checklist will automatically route to the 3 Supervisors for review and forwarding, then to the Assistant Manager / Deputy Manager for final sign-off.
+                    Fill out the CCTV inspection and diagnostic items, select your name under <strong>"Attended
+                        by"</strong>, and submit. The checklist will automatically route to the 3 Supervisors for review
+                    and forwarding, then to the Assistant Manager / Deputy Manager for final sign-off.
                 </p>
             </div>
             <div class="col-lg-4 mt-3 mt-lg-0 text-lg-end">
@@ -50,50 +54,54 @@
                 All Forms ({{ templates.count }})
             </button>
             {% for cat in categories %}
-                <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-btn" data-category="{{ cat|slugify }}">
-                    {{ cat }}
-                </button>
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-btn"
+                data-category="{{ cat|slugify }}">
+                {{ cat }}
+            </button>
             {% endfor %}
         </div>
         <div class="input-group" style="max-width: 320px;">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" id="checklistSearch" class="form-control border-start-0" placeholder="Search checklist or doc no...">
+            <input type="text" id="checklistSearch" class="form-control border-start-0"
+                placeholder="Search checklist or doc no...">
         </div>
     </div>
 
     <!-- 12 Checklists Grid -->
     <div class="row g-3" id="checklistGrid">
         {% for item in templates %}
-            <div class="col-md-6 col-xl-4 checklist-item-wrapper" data-category="{{ item.category|slugify }}" data-title="{{ item.title|lower }}" data-doc="{{ item.doc_no|lower }}">
-                <div class="card h-100 checklist-card shadow-sm">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <span class="card-doc-badge">{{ item.doc_no }}</span>
-                            <span class="badge bg-light text-secondary border small">{{ item.revision }}</span>
+        <div class="col-md-6 col-xl-4 checklist-item-wrapper" data-category="{{ item.category|slugify }}"
+            data-title="{{ item.title|lower }}" data-doc="{{ item.doc_no|lower }}">
+            <div class="card h-100 checklist-card shadow-sm">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="card-doc-badge">{{ item.doc_no }}</span>
+                        <span class="badge bg-light text-secondary border small">{{ item.revision }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-primary-subtle text-primary p-3 rounded-3 fs-3">
+                            <i class="bi bi-{{ item.icon }}"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="bg-primary-subtle text-primary p-3 rounded-3 fs-3">
-                                <i class="bi bi-{{ item.icon }}"></i>
-                            </div>
-                            <div>
-                                <h2 class="h6 fw-bold mb-1 text-dark">{{ item.title }}</h2>
-                                <span class="badge bg-secondary-subtle text-secondary small">{{ item.category }}</span>
-                            </div>
+                        <div>
+                            <h2 class="h6 fw-bold mb-1 text-dark">{{ item.title }}</h2>
+                            <span class="badge bg-secondary-subtle text-secondary small">{{ item.category }}</span>
                         </div>
-                        <p class="text-muted small flex-grow-1 mb-3">
-                            {{ item.description|default:"Standard operating maintenance, diagnosis, and fault restoration checklist." }}
-                        </p>
-                        <div class="pt-3 border-top d-flex justify-content-between align-items-center">
-                            <span class="small text-muted">
-                                <i class="bi bi-clock-history me-1"></i> Retention: {{ item.retention_period }}
-                            </span>
-                            <a href="{% url 'checklist_form' item.id %}" class="btn btn-sm btn-success fw-semibold rounded-pill px-3">
-                                <i class="bi bi-pencil-square me-1"></i> Start Checklist
-                            </a>
-                        </div>
+                    </div>
+                    <p class="text-muted small flex-grow-1 mb-3">
+                        {{ item.description|default:"Standard operating maintenance, diagnosis, and fault restoration checklist." }}
+                    </p>
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">
+                            <i class="bi bi-clock-history me-1"></i> Retention: {{ item.retention_period }}
+                        </span>
+                        <a href="{% url 'checklist_form' item.id %}"
+                            class="btn btn-sm btn-success fw-semibold rounded-pill px-3">
+                            <i class="bi bi-pencil-square me-1"></i> Start Checklist
+                        </a>
                     </div>
                 </div>
             </div>
+        </div>
         {% endfor %}
     </div>
 
@@ -106,7 +114,7 @@
             <span class="small text-muted">Real-time submission log</span>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 bifpcl-datatable" id="mainDashboardTable" data-order-col="3" data-order-dir="desc" data-disable-last="true" data-page-length="10">
                 <thead class="table-light small text-muted">
                     <tr>
                         <th class="ps-4">Tracking Ref</th>
@@ -121,75 +129,78 @@
                 </thead>
                 <tbody>
                     {% for sub in recent_submissions %}
-                        <tr>
-                            <td class="ps-4 fw-bold font-monospace text-primary small">
-                                {{ sub.tracking_no }}
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
-                                <div class="small text-muted">{{ sub.template.doc_no }}</div>
-                            </td>
-                            <td>
-                                {% for member in sub.attended_by.all %}
-                                    <div class="fw-medium text-dark">{{ member.name }}</div>
-                                    <div class="small text-muted" style="font-size: 0.72rem;">{{ member.designation }}</div>
-                                {% empty %}
-                                    <span class="text-muted fst-italic">None</span>
-                                {% endfor %}
-                            </td>
+                    <tr>
+                        <td class="ps-4 fw-bold font-monospace text-primary small">
+                            {{ sub.tracking_no }}
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
+                            <div class="small text-muted">{{ sub.template.doc_no }}</div>
+                        </td>
+                        <td>
+                            {% for member in sub.attended_by.all %}
+                            <div class="fw-medium text-dark">{{ member.name }}</div>
+                            <div class="small text-muted" style="font-size: 0.72rem;">{{ member.designation }}</div>
+                            {% empty %}
+                            <span class="text-muted fst-italic">None</span>
+                            {% endfor %}
+                        </td>
 
-                            <td class="small text-secondary">
-                                {{ sub.report_date|date:"d M Y" }}
-                            </td>
-                            <td>
-                                {% if sub.status == 'SUBMITTED' %}
-                                    <span class="badge-status status-submitted">
-                                        <i class="bi bi-hourglass-split me-1"></i>Pending Supervisor
-                                    </span>
-                                {% elif sub.status == 'FORWARDED' %}
-                                    <span class="badge-status status-forwarded">
-                                        <i class="bi bi-arrow-right-circle me-1"></i>Pending Manager
-                                    </span>
-                                {% elif sub.status == 'APPROVED' %}
-                                    <span class="badge-status status-approved">
-                                        <i class="bi bi-check2-all me-1"></i>Approved
-                                    </span>
-                                {% else %}
-                                    <span class="badge-status status-returned">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Returned
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="small">
-                                {% if sub.supervised_by %}
-                                    <span class="text-success fw-medium">{{ sub.supervised_by.get_full_name|default:sub.supervised_by.username }}</span>
-                                {% else %}
-                                    <span class="text-muted fst-italic">Awaiting</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">
-                                {% if sub.approved_by %}
-                                    <span class="text-success fw-bold">{{ sub.approved_by.get_full_name|default:sub.approved_by.username }}</span>
-                                {% else %}
-                                    <span class="text-muted fst-italic">Awaiting</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                <a href="{% url 'checklist_detail' sub.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Report">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
-                                <a href="{% url 'checklist_print' sub.id %}" class="btn btn-sm btn-outline-primary py-1 px-2 ms-1" target="_blank" title="Print Official Document">
-                                    <i class="bi bi-printer"></i> Print
-                                </a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-4 text-muted">
-                                <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
-                                No submissions yet today. Click "Start Checklist" on any form above to complete your first inspection!
-                            </td>
-                        </tr>
+                        <td class="small text-secondary">
+                            {{ sub.report_date|date:"d M Y" }}
+                        </td>
+                        <td>
+                            {% if sub.status == 'SUBMITTED' %}
+                            <span class="badge-status status-submitted">
+                                <i class="bi bi-hourglass-split me-1"></i>Pending Supervisor
+                            </span>
+                            {% elif sub.status == 'FORWARDED' %}
+                            <span class="badge-status status-forwarded">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Pending Manager
+                            </span>
+                            {% elif sub.status == 'APPROVED' %}
+                            <span class="badge-status status-approved">
+                                <i class="bi bi-check2-all me-1"></i>Approved
+                            </span>
+                            {% else %}
+                            <span class="badge-status status-returned">
+                                <i class="bi bi-arrow-repeat me-1"></i>Returned
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if sub.supervised_by %}
+                            <span class="text-success fw-medium">{{ sub.supervised_by_display }}</span>
+                            {% else %}
+                            <span class="text-muted fst-italic">Awaiting</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if sub.approved_by %}
+                            <span class="text-success fw-bold">{{ sub.approved_by_display }}</span>
+                            {% else %}
+                            <span class="text-muted fst-italic">Awaiting</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'checklist_detail' sub.id %}"
+                                class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Report">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{% url 'checklist_print' sub.id %}"
+                                class="btn btn-sm btn-outline-primary py-1 px-2 ms-1" target="_blank"
+                                title="Print Official Document">
+                                <i class="bi bi-printer"></i> Print
+                            </a>
+                            {% if sub.status == 'RETURNED' %}
+                            <a href="{% url 'checklist_edit' sub.id %}"
+                                class="btn btn-sm btn-warning text-dark py-1 px-2 ms-1 fw-medium"
+                                title="Edit & Resubmit Corrections">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -201,7 +212,7 @@
 {% block extra_js %}
 <script>
     // Search & Filter functionality
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('checklistSearch');
         const filterButtons = document.querySelectorAll('.filter-btn');
         const items = document.querySelectorAll('.checklist-item-wrapper');
@@ -227,7 +238,7 @@
         }
 
         filterButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function () {
                 filterButtons.forEach(b => {
                     b.classList.remove('active', 'btn-dark');
                     b.classList.add('btn-outline-secondary');

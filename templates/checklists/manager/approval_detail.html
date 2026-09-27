@@ -18,7 +18,8 @@
             <span class="badge-status status-forwarded fs-6">
                 <i class="bi bi-arrow-right-circle me-1"></i>Stage 3: Management Final Approval
             </span>
-            <a href="{% url 'checklist_print' submission.id %}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+            <a href="{% url 'checklist_print' submission.id %}" target="_blank"
+                class="btn btn-sm btn-outline-primary rounded-pill px-3">
                 <i class="bi bi-printer me-1"></i> Print View
             </a>
         </div>
@@ -29,7 +30,8 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-file-earmark-text text-primary me-2"></i>Full Inspection Record</h2>
+                    <h2 class="h6 fw-bold text-dark mb-0"><i class="bi bi-file-earmark-text text-primary me-2"></i>Full
+                        Inspection Record</h2>
                     <span class="small text-muted">Submitted {{ submission.report_date|date:"d M Y" }}</span>
                 </div>
                 <div class="card-body p-4">
@@ -43,10 +45,11 @@
                                 <td style="width: 25%;">{{ submission.report_date|date:"d M Y" }}</td>
                             </tr>
                             {% for key, fld in submission.equipment_data.items %}
-                                <tr>
-                                    <th class="table-light">{{ fld.label }}</th>
-                                    <td colspan="3" class="fw-semibold text-dark">{{ fld.value|default:"Not specified" }}</td>
-                                </tr>
+                            <tr>
+                                <th class="table-light">{{ fld.label }}</th>
+                                <td colspan="3" class="fw-semibold text-dark">{{ fld.value|default:"Not specified" }}
+                                </td>
+                            </tr>
                             {% endfor %}
                             <tr>
                                 <th class="table-light">Outage Reported At</th>
@@ -71,34 +74,36 @@
 
                     <!-- Inspection and Diagnostic Checklist -->
                     <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Inspection and Diagnostic Checklist</h3>
-                    <table class="table table-bordered table-sm small mb-4">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Inspection Item</th>
-                                <th class="text-center" style="width: 80px;">Status</th>
-                                <th>Reading / Remarks</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item_id, item in submission.diagnostics_data.items %}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="approvalDiagTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Inspection Item</th>
+                                    <th class="text-center" style="width: 80px;">Status</th>
+                                    <th>Reading / Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item_id, item in submission.diagnostics_data.items %}
                                 <tr>
                                     <td class="text-muted">{{ forloop.counter }}</td>
                                     <td>{{ item.text }}</td>
                                     <td class="text-center">
                                         {% if item.status == 'Yes' %}
-                                            <span class="badge bg-success">Yes</span>
+                                        <span class="badge bg-success">Yes</span>
                                         {% elif item.status == 'No' %}
-                                            <span class="badge bg-danger">No</span>
+                                        <span class="badge bg-danger">No</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">N/A</span>
+                                        <span class="badge bg-secondary">N/A</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-secondary">{{ item.remarks|default:"—" }}</td>
                                 </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- Fault Classification & Action Taken -->
                     <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Fault Classification & Action Taken</h3>
@@ -115,8 +120,9 @@
 
                     <!-- Materials & Spares -->
                     {% if submission.materials_data %}
-                        <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Materials, Warranty & Disposal</h3>
-                        <table class="table table-bordered table-sm small mb-3">
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Materials, Warranty & Disposal</h3>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="approvalMaterialsTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
                             <thead class="table-light">
                                 <tr>
                                     <th>Sl.</th>
@@ -128,38 +134,41 @@
                             </thead>
                             <tbody>
                                 {% for m in submission.materials_data %}
-                                    <tr>
-                                        <td>{{ m.sl }}</td>
-                                        <td>{{ m.desc }}</td>
-                                        <td>{{ m.model|default:"—" }}</td>
-                                        <td class="text-center">{{ m.qty }}</td>
-                                        <td>{{ m.ref|default:"—" }}</td>
-                                    </tr>
+                                <tr>
+                                    <td>{{ m.sl }}</td>
+                                    <td>{{ m.desc }}</td>
+                                    <td>{{ m.model|default:"—" }}</td>
+                                    <td class="text-center">{{ m.qty }}</td>
+                                    <td>{{ m.ref|default:"—" }}</td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <div class="small text-muted mb-4">
-                            <strong>Disposal:</strong> {{ submission.faulty_item_disposal|default:"N/A" }} (Ref: {{ submission.disposal_ref_no|default:"—" }}) &bull; 
-                            <strong>Warranty:</strong> {{ submission.warranty_status|default:"Out of Warranty" }} (PO: {{ submission.vendor_po_ref|default:"—" }})
-                        </div>
+                    </div>
+                    <div class="small text-muted mb-4">
+                        <strong>Disposal:</strong> {{ submission.faulty_item_disposal|default:"N/A" }} (Ref: {{ submission.disposal_ref_no|default:"—" }}) &bull;
+                        <strong>Warranty:</strong> {{ submission.warranty_status|default:"Out of Warranty" }} (PO: {{ submission.vendor_po_ref|default:"—" }})
+                    </div>
                     {% endif %}
 
                     <!-- Restoration Verification -->
-                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Restoration Verification & Final Status</h3>
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Restoration Verification & Final Status
+                    </h3>
                     <div class="row g-2 mb-3">
                         {% for check in submission.verification_checks %}
-                            <div class="col-sm-6">
-                                <div class="p-2 border rounded bg-light small">
-                                    <i class="bi bi-check-circle-fill text-success me-1"></i> {{ check }}
-                                </div>
+                        <div class="col-sm-6">
+                            <div class="p-2 border rounded bg-light small">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i> {{ check }}
                             </div>
+                        </div>
                         {% endfor %}
                     </div>
                     <div class="p-3 bg-light border rounded small">
                         <strong>Final Status:</strong> <span class="badge bg-success">{{ submission.final_status }}</span>
                         {% if submission.final_status_other %} - {{ submission.final_status_other }}{% endif %}
                         {% if submission.additional_findings %}
-                            <div class="mt-2 text-muted"><strong>Findings:</strong> {{ submission.additional_findings }}</div>
+                        <div class="mt-2 text-muted"><strong>Findings:</strong> {{ submission.additional_findings }}
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -170,17 +179,19 @@
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 sticky-top" style="top: 80px;">
                 <div class="card-header bg-success text-white py-3">
-                    <h2 class="h6 fw-bold mb-0"><i class="bi bi-patch-check-fill me-2"></i>Executive Approval ("Approved By")</h2>
+                    <h2 class="h6 fw-bold mb-0"><i class="bi bi-patch-check-fill me-2"></i>Executive Approval ("Approved
+                        By")</h2>
                 </div>
                 <div class="card-body p-4">
                     <!-- Stage 1 Info -->
                     <div class="mb-3 p-3 bg-light rounded border small">
-                        <div class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.7rem;">Stage 1: Attended By</div>
+                        <div class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.7rem;">Stage 1: Attended
+                            By</div>
                         {% for m in submission.attended_by.all %}
-                            <div class="fw-bold text-dark fs-6">{{ m.name }}</div>
-                            <div class="text-secondary mb-1">{{ m.designation }}</div>
+                        <div class="fw-bold text-dark fs-6">{{ m.name }}</div>
+                        <div class="text-secondary mb-1">{{ m.designation }}</div>
                         {% empty %}
-                            <div class="text-muted fst-italic">None recorded</div>
+                        <div class="text-muted fst-italic">None recorded</div>
                         {% endfor %}
                         <div class="text-muted mt-2 border-top pt-1"><i class="bi bi-clock me-1"></i>{{ submission.submitted_at|date:"d M Y, h:i A" }}</div>
                     </div>
@@ -188,13 +199,14 @@
 
                     <!-- Stage 2 Info -->
                     <div class="mb-3 p-3 bg-primary-subtle rounded border border-primary-subtle small">
-                        <div class="text-primary fw-bold text-uppercase" style="font-size: 0.7rem;">Stage 2: Supervised & Forwarded By</div>
-                        <div class="fw-bold text-dark fs-6">{{ submission.supervised_by.get_full_name|default:submission.supervised_by.username }}</div>
+                        <div class="text-primary fw-bold text-uppercase" style="font-size: 0.7rem;">Stage 2: Supervised
+                            & Forwarded By</div>
+                        <div class="fw-bold text-dark fs-6">{{ submission.supervised_by_display }}</div>
                         <div class="text-muted"><i class="bi bi-clock me-1"></i>{{ submission.supervised_at|date:"d M Y, h:i A" }}</div>
                         {% if submission.supervisor_remarks %}
-                            <div class="mt-2 p-2 bg-white rounded border fst-italic text-secondary">
-                                "{{ submission.supervisor_remarks }}"
-                            </div>
+                        <div class="mt-2 p-2 bg-white rounded border fst-italic text-secondary">
+                            "{{ submission.supervisor_remarks }}"
+                        </div>
                         {% endif %}
                     </div>
 
@@ -203,17 +215,22 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="id_manager_remarks" class="form-label fw-bold small text-dark">
-                                Manager Approval Remarks / Comments:
+                                Manager Approval Remarks / Comments: <span
+                                    class="text-muted fw-normal">(Optional)</span>
                             </label>
-                            <textarea name="manager_remarks" id="id_manager_remarks" rows="3" class="form-control" placeholder="Verified and approved for permanent archival." required></textarea>
-                            <div class="form-text small">Your name and designation will be affixed in the official document signature block.</div>
+                            <textarea name="manager_remarks" id="id_manager_remarks" rows="3" class="form-control"
+                                placeholder="Optional approval remarks or comments..."></textarea>
+                            <div class="form-text small">Your name and designation will be affixed in the official
+                                document signature block.</div>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" name="action" value="approve" class="btn btn-success fw-bold py-2 shadow-sm">
+                            <button type="submit" name="action" value="approve"
+                                class="btn btn-success fw-bold py-2 shadow-sm">
                                 <i class="bi bi-check2-all me-1"></i> Grant Final Approval
                             </button>
-                            <button type="submit" name="action" value="return" class="btn btn-outline-warning text-dark py-2">
+                            <button type="submit" name="action" value="return"
+                                class="btn btn-outline-warning text-dark py-2">
                                 <i class="bi bi-arrow-repeat me-1"></i> Return with Comments
                             </button>
                         </div>

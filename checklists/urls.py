@@ -6,6 +6,7 @@ urlpatterns = [
     # Public (No Login)
     path('', views.main_dashboard, name='main_dashboard'),
     path('form/<int:template_id>/', views.checklist_form, name='checklist_form'),
+    path('edit/<int:submission_id>/', views.checklist_edit, name='checklist_edit'),
     path('success/<str:tracking_no>/', views.submission_success, name='submission_success'),
     path('view/<int:submission_id>/', views.checklist_detail, name='checklist_detail'),
     path('print/<int:submission_id>/', views.checklist_print, name='checklist_print'),

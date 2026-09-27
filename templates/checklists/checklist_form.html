@@ -10,10 +10,50 @@
         <a href="{% url 'main_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
             <i class="bi bi-arrow-left me-1"></i> Back to Main Dashboard
         </a>
+        {% if is_edit %}
+        <div class="badge bg-warning text-dark border border-warning px-3 py-2">
+            <i class="bi bi-pencil-square me-1"></i> Revision Mode: {{ submission.tracking_no }}
+        </div>
+        {% else %}
         <div class="badge bg-light text-secondary border px-3 py-2">
             <i class="bi bi-shield-check text-success me-1"></i> Public IT Technician Form (No Login Required)
         </div>
+        {% endif %}
     </div>
+
+    {% if is_edit %}
+    <div class="alert alert-warning border-warning shadow-sm mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-arrow-repeat fs-2 text-warning flex-shrink-0 mt-1"></i>
+            <div class="flex-grow-1">
+                <h5 class="alert-heading fw-bold mb-1">
+                    Checklist Returned for Correction &mdash; {{ submission.tracking_no }}
+                </h5>
+                <p class="mb-2">
+                    This checklist was returned by 
+                    <strong>{{ submission.supervised_by_display|default:"Supervisor" }}</strong>.
+                    Please review the remarks below, make the necessary updates, and click <strong>"Save Changes &amp; Resubmit Checklist"</strong>.
+                </p>
+                {% if submission.supervisor_remarks %}
+                <div class="p-3 bg-white rounded border border-warning-subtle mb-2">
+                    <div class="small fw-bold text-uppercase text-secondary mb-1">
+                        <i class="bi bi-chat-left-dots me-1"></i>Supervisor Return Notes:
+                    </div>
+                    <div class="fw-semibold text-danger">{{ submission.supervisor_remarks }}</div>
+                </div>
+                {% endif %}
+                {% if submission.manager_remarks %}
+                <div class="p-3 bg-white rounded border border-warning-subtle mb-2">
+                    <div class="small fw-bold text-uppercase text-secondary mb-1">
+                        <i class="bi bi-chat-left-dots me-1"></i>Manager Return Notes:
+                    </div>
+                    <div class="fw-semibold text-danger">{{ submission.manager_remarks }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- The Paper Document Container -->
     <div class="bifpcl-doc-paper shadow">
@@ -42,17 +82,17 @@
                         <th style="width: 20%;">Work Request No.</th>
                         <td style="width: 30%;">
                             <input type="text" name="work_request_no" class="form-control form-control-sm border-0 p-0"
-                                placeholder="e.g. WR-2026-089">
+                                placeholder="e.g. WR-2026-089" value="{{ submission.work_request_no|default:'' }}">
                         </td>
                         <th style="width: 20%;">Report Date</th>
                         <td style="width: 30%;">
-                            <input type="date" name="report_date" value="{{ today }}"
+                            <input type="date" name="report_date" value="{% if submission.report_date %}{{ submission.report_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0" required>
                         </td>
                     </tr>
 
                     <!-- Dynamic Equipment Fields -->
-                    {% for field in template.equipment_fields_schema %}
+                    {% for field in equipment_fields %}
                     {% if forloop.counter0|divisibleby:2 %}
                     <tr>
                     {% endif %}
@@ -60,7 +100,9 @@
                         <td>
                             <input type="text" name="eq_{{ field.key }}"
                                 class="form-control form-control-sm border-0 p-0"
-                                placeholder="{{ field.placeholder|default:'' }}" {% if field.required %}required{% endif %}>
+                                placeholder="{{ field.placeholder|default:'' }}"
+                                value="{{ field.current_value|default:'' }}"
+                                {% if field.required %}required{% endif %}>
                         </td>
                         {% if forloop.counter|divisibleby:2 or forloop.last %}
                         {% if forloop.last and not forloop.counter|divisibleby:2 %}
@@ -75,11 +117,13 @@
                         <th>Outage Reported At</th>
                         <td>
                             <input type="datetime-local" id="outageReportedAt" name="outage_reported_at"
+                                value="{% if submission.outage_reported_at %}{{ submission.outage_reported_at|date:'Y-m-d\TH:i' }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0">
                         </td>
                         <th>Site Arrival At</th>
                         <td>
                             <input type="datetime-local" name="site_arrival_at"
+                                value="{% if submission.site_arrival_at %}{{ submission.site_arrival_at|date:'Y-m-d\TH:i' }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0">
                         </td>
                     </tr>
@@ -87,11 +131,13 @@
                         <th>Restored At</th>
                         <td>
                             <input type="datetime-local" id="restoredAt" name="restored_at"
+                                value="{% if submission.restored_at %}{{ submission.restored_at|date:'Y-m-d\TH:i' }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0">
                         </td>
                         <th>Total Downtime</th>
                         <td>
                             <input type="text" id="totalDowntime" name="total_downtime"
+                                value="{{ submission.total_downtime|default:'' }}"
                                 class="form-control form-control-sm border-0 p-0"
                                 placeholder="e.g. 1 hr 20 mins (Auto calculated)">
                         </td>
@@ -100,11 +146,13 @@
                         <th>Reported By</th>
                         <td>
                             <input type="text" name="reported_by" class="form-control form-control-sm border-0 p-0"
+                                value="{{ submission.reported_by|default:'' }}"
                                 placeholder="e.g. Control Room Officer">
                         </td>
                         <th>Contact No.</th>
                         <td>
                             <input type="text" name="contact_no" class="form-control form-control-sm border-0 p-0"
+                                value="{{ submission.contact_no|default:'' }}"
                                 placeholder="e.g. Ext: 2104 / 01700-000000">
                         </td>
                     </tr>
@@ -124,22 +172,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in template.diagnostic_items_schema %}
+                    {% for item in diagnostic_items %}
                     <tr>
                         <td>{{ forloop.counter }}. {{ item.text }}</td>
                         <td class="text-center">
                             <input type="radio" name="diag_status_{{ item.id }}" value="Yes" class="form-check-input"
-                                checked>
+                                {% if item.current_status == 'Yes' or not item.current_status %}checked{% endif %}>
                         </td>
                         <td class="text-center">
-                            <input type="radio" name="diag_status_{{ item.id }}" value="No" class="form-check-input">
+                            <input type="radio" name="diag_status_{{ item.id }}" value="No" class="form-check-input"
+                                {% if item.current_status == 'No' %}checked{% endif %}>
                         </td>
                         <td class="text-center">
-                            <input type="radio" name="diag_status_{{ item.id }}" value="N/A" class="form-check-input">
+                            <input type="radio" name="diag_status_{{ item.id }}" value="N/A" class="form-check-input"
+                                {% if item.current_status == 'N/A' %}checked{% endif %}>
                         </td>
                         <td>
                             <input type="text" name="diag_remarks_{{ item.id }}"
-                                class="form-control form-control-sm border-0 p-0" placeholder="Observed status / value">
+                                class="form-control form-control-sm border-0 p-0"
+                                placeholder="Observed status / value"
+                                value="{{ item.current_remarks|default:'' }}">
                         </td>
                     </tr>
                     {% endfor %}
@@ -161,7 +213,12 @@
                     <tr>
                         <td class="text-center align-middle">
                             <input type="radio" name="fault_selected" value="{{ opt.key }}" id="fault_{{ opt.key }}"
-                                class="form-check-input" {% if forloop.first %}checked{% endif %}>
+                                class="form-check-input"
+                                {% if submission %}
+                                    {% if submission.fault_selected == opt.key %}checked{% endif %}
+                                {% else %}
+                                    {% if forloop.first %}checked{% endif %}
+                                {% endif %}>
                         </td>
                         <td>
                             <label for="fault_{{ opt.key }}" class="mb-0 cursor-pointer">
@@ -173,7 +230,7 @@
                         <td rowspan="{{ template.fault_options_schema|length }}" class="align-top">
                             <textarea name="action_taken_details" rows="7" class="form-control form-control-sm border-0"
                                 placeholder="Detailed troubleshooting steps executed, root cause analysis, and corrective actions taken..."
-                                required></textarea>
+                                required>{{ submission.action_taken_details|default:'' }}</textarea>
                         </td>
                         {% endif %}
                     </tr>
@@ -200,28 +257,44 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td class="text-center">1</td>
-                        <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="e.g. Cat6 Patch Cord 3M"></td>
-                        <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="e.g. Schneider UTP"></td>
-                        <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1"
-                                class="form-control form-control-sm border-0 p-0 text-center"></td>
-                        <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="e.g. SR-401"></td>
-                    </tr>
-                    <tr>
-                        <td class="text-center">2</td>
-                        <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="Description of spare (if any)"></td>
-                        <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="Code / Model"></td>
-                        <td class="text-center"><input type="number" name="mat_qty[]" min="1"
-                                class="form-control form-control-sm border-0 p-0 text-center"></td>
-                        <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
-                                placeholder="Store Ref"></td>
-                    </tr>
+                    {% if submission and submission.materials_data %}
+                        {% for mat in submission.materials_data %}
+                        <tr>
+                            <td class="text-center">{{ forloop.counter }}</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                    value="{{ mat.desc }}" placeholder="e.g. Cat6 Patch Cord 3M"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                    value="{{ mat.model }}" placeholder="e.g. Schneider UTP"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1"
+                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                    value="{{ mat.ref }}" placeholder="e.g. SR-401"></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="e.g. Cat6 Patch Cord 3M"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="e.g. Schneider UTP"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1"
+                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="e.g. SR-401"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center">2</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="Description of spare (if any)"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="Code / Model"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" min="1"
+                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                    placeholder="Store Ref"></td>
+                        </tr>
+                    {% endif %}
                 </tbody>
             </table>
 
@@ -233,23 +306,23 @@
                                 <strong class="me-2">Faulty Item Disposal:</strong>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="faulty_item_disposal" value="Store Return"
-                                        class="form-check-input me-1"> Store Return
+                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Store Return' %}checked{% endif %}> Store Return
                                 </label>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="faulty_item_disposal" value="Condemnation"
-                                        class="form-check-input me-1"> Condemnation
+                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Condemnation' %}checked{% endif %}> Condemnation
                                 </label>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="faulty_item_disposal" value="Warranty Return"
-                                        class="form-check-input me-1"> Warranty Return
+                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Warranty Return' %}checked{% endif %}> Warranty Return
                                 </label>
                                 <label class="form-check-label me-3">
                                     <input type="radio" name="faulty_item_disposal" value="N/A"
-                                        class="form-check-input me-1" checked> N/A
+                                        class="form-check-input me-1" {% if not submission or submission.faulty_item_disposal == 'N/A' or not submission.faulty_item_disposal %}checked{% endif %}> N/A
                                 </label>
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <span>Ref. No.:</span>
-                                    <input type="text" name="disposal_ref_no"
+                                    <input type="text" name="disposal_ref_no" value="{{ submission.disposal_ref_no|default:'' }}"
                                         class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
                                         style="width: 150px;">
                                 </div>
@@ -262,19 +335,19 @@
                                 <strong class="me-2">Warranty / AMC:</strong>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="warranty_status" value="Under Warranty"
-                                        class="form-check-input me-1"> Under Warranty
+                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
                                 </label>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="warranty_status" value="Under AMC"
-                                        class="form-check-input me-1"> Under AMC
+                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
                                 </label>
                                 <label class="form-check-label me-3">
                                     <input type="radio" name="warranty_status" value="Out of Warranty"
-                                        class="form-check-input me-1" checked> Out of Warranty
+                                        class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
                                 </label>
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <span>Vendor / PO Ref.:</span>
-                                    <input type="text" name="vendor_po_ref"
+                                    <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
                                         class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
                                         style="width: 180px;">
                                 </div>
@@ -295,7 +368,8 @@
                             {% if forloop.counter0|divisibleby:2 %}
                             <div class="form-check mb-1">
                                 <input class="form-check-input" type="checkbox" name="verification_checks"
-                                    value="{{ v }}" id="verif_{{ forloop.counter }}" checked>
+                                    value="{{ v }}" id="verif_{{ forloop.counter }}"
+                                    {% if not submission or v in submission.verification_checks %}checked{% endif %}>
                                 <label class="form-check-label small" for="verif_{{ forloop.counter }}">
                                     {{ v }}
                                 </label>
@@ -308,7 +382,8 @@
                             {% if not forloop.counter0|divisibleby:2 %}
                             <div class="form-check mb-1">
                                 <input class="form-check-input" type="checkbox" name="verification_checks"
-                                    value="{{ v }}" id="verif_{{ forloop.counter }}" checked>
+                                    value="{{ v }}" id="verif_{{ forloop.counter }}"
+                                    {% if not submission or v in submission.verification_checks %}checked{% endif %}>
                                 <label class="form-check-label small" for="verif_{{ forloop.counter }}">
                                     {{ v }}
                                 </label>
@@ -323,22 +398,22 @@
                                 <strong class="me-1">Final Status:</strong>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="final_status" value="Restored and Closed"
-                                        class="form-check-input me-1" checked> Restored and Closed
+                                        class="form-check-input me-1" {% if not submission or submission.final_status == 'Restored and Closed' %}checked{% endif %}> Restored and Closed
                                 </label>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="final_status" value="Pending Power Department"
-                                        class="form-check-input me-1"> Pending Power Department
+                                        class="form-check-input me-1" {% if submission.final_status == 'Pending Power Department' %}checked{% endif %}> Pending Power Department
                                 </label>
                                 <label class="form-check-label me-2">
                                     <input type="radio" name="final_status" value="Pending Replacement"
-                                        class="form-check-input me-1"> Pending Replacement
+                                        class="form-check-input me-1" {% if submission.final_status == 'Pending Replacement' %}checked{% endif %}> Pending Replacement
                                 </label>
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <label class="form-check-label me-1">
                                         <input type="radio" name="final_status" value="Other"
-                                            class="form-check-input me-1"> Other:
+                                            class="form-check-input me-1" {% if submission.final_status == 'Other' %}checked{% endif %}> Other:
                                     </label>
-                                    <input type="text" name="final_status_other"
+                                    <input type="text" name="final_status_other" value="{{ submission.final_status_other|default:'' }}"
                                         class="form-control form-control-sm border-bottom border-0 rounded-0"
                                         style="width: 140px;">
                                 </div>
@@ -350,7 +425,7 @@
                             <strong>Additional Findings / Corrective Action:</strong>
                             <textarea name="additional_findings" rows="2"
                                 class="form-control form-control-sm border-0 mt-1"
-                                placeholder="Enter any secondary observations, recommendations, or recurring fault notes..."></textarea>
+                                placeholder="Enter any secondary observations, recommendations, or recurring fault notes...">{{ submission.additional_findings|default:'' }}</textarea>
                         </td>
                     </tr>
                 </tbody>
@@ -381,7 +456,8 @@
                                 <div class="border rounded bg-white p-2" style="max-height: 180px; overflow-y: auto;">
                                     {% for member in team_members %}
                                     <div class="form-check py-1 border-bottom border-light">
-                                        <input class="form-check-input attended-checkbox" type="checkbox" name="attended_by" value="{{ member.id }}" id="att_{{ member.id }}">
+                                        <input class="form-check-input attended-checkbox" type="checkbox" name="attended_by" value="{{ member.id }}" id="att_{{ member.id }}"
+                                            {% if member.id in attended_member_ids %}checked{% endif %}>
                                         <label class="form-check-label small w-100" for="att_{{ member.id }}" style="cursor: pointer;">
                                             <strong class="text-dark">{{ member.name }}</strong>
                                             <div class="text-muted" style="font-size: 0.72rem;">{{ member.designation }} ({{ member.employee_id }})</div>
@@ -420,8 +496,7 @@
 
             <!-- Document Footer Control -->
             <div class="bifpcl-doc-footer">
-                <div><strong>Doc No:</strong> {{ template.doc_no }} &nbsp;&bull;&nbsp; <strong>Rev:</strong> {{
-                    template.revision }}</div>
+                <div><strong>Doc No:</strong> {{ template.doc_no }} &nbsp;&bull;&nbsp; <strong>Rev:</strong> {{ template.revision }}</div>
                 <div><strong>Effective Date:</strong> {{ template.effective_date|date:"d-m-Y" }}</div>
                 <div><strong>Retention:</strong> {{ template.retention_period }}</div>
                 <div><strong>Page:</strong> 1 of 1</div>
@@ -429,6 +504,14 @@
 
             <!-- Submit Action Bar -->
             <div class="mt-4 pt-3 border-top text-center no-print">
+                {% if is_edit %}
+                <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold shadow-sm rounded-pill text-dark">
+                    <i class="bi bi-arrow-repeat me-2"></i> Save Changes &amp; Resubmit Checklist
+                </button>
+                <div class="small text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i> Resubmitting will update the report and return it to Stage 2: Supervisor Review queue.
+                </div>
+                {% else %}
                 <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm rounded-pill">
                     <i class="bi bi-send-check me-2"></i> Submit Checklist for Supervisor Review
                 </button>
@@ -436,6 +519,7 @@
                     <i class="bi bi-info-circle me-1"></i> Once submitted, this report will immediately appear on the 3
                     Supervisors' Dashboard.
                 </div>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -513,6 +597,7 @@
     attendedCheckboxes.forEach(cb => {
         cb.addEventListener('change', updateAttendedCount);
     });
+    updateAttendedCount();
 
     if (form) {
         form.addEventListener('submit', function (e) {

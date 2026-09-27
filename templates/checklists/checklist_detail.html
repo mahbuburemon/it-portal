@@ -15,11 +15,49 @@
             <div class="small text-muted font-monospace">Ref: {{ submission.tracking_no }} &bull; {{ submission.template.doc_no }}</div>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'checklist_print' submission.id %}" target="_blank" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            {% if submission.status == 'RETURNED' %}
+            <a href="{% url 'checklist_edit' submission.id %}"
+                class="btn btn-warning text-dark rounded-pill px-4 shadow-sm fw-medium">
+                <i class="bi bi-pencil-square me-1"></i> Edit & Resubmit
+            </a>
+            {% endif %}
+            <a href="{% url 'checklist_print' submission.id %}" target="_blank"
+                class="btn btn-primary rounded-pill px-4 shadow-sm">
                 <i class="bi bi-printer me-1"></i> Print / Save PDF
             </a>
         </div>
     </div>
+
+    {% if submission.status == 'RETURNED' %}
+    <div
+        class="alert alert-warning border-warning d-flex flex-wrap align-items-center justify-content-between p-3 mb-4 rounded-3 shadow-sm gap-3">
+        <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-arrow-repeat fs-2 text-warning flex-shrink-0 mt-1"></i>
+            <div>
+                <h5 class="alert-heading mb-1 fw-bold">Checklist Returned for Correction</h5>
+                <div class="mb-1 text-dark">
+                    {% if submission.supervisor_remarks %}
+                    <strong>Supervisor Remarks:</strong> <span class="text-danger fw-semibold">{{ submission.supervisor_remarks }}</span>
+                    {% elif submission.manager_remarks %}
+                    <strong>Manager Remarks:</strong> <span class="text-danger fw-semibold">{{ submission.manager_remarks }}</span>
+                    {% else %}
+                    This checklist was returned for revision. Please review the details, make the required corrections,
+                    and resubmit.
+                    {% endif %}
+                </div>
+                <div class="small text-muted">
+                    Returned by: <strong>{{ submission.supervised_by_display|default:"Supervisor" }}</strong>{% if submission.supervised_at %} on {{ submission.supervised_at|date:"d M Y, h:i A" }}{% endif %}
+                </div>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'checklist_edit' submission.id %}"
+                class="btn btn-warning text-dark fw-bold px-4 py-2 rounded-pill shadow-sm">
+                <i class="bi bi-pencil-square me-1"></i> Edit &amp; Resubmit
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Status Progression Banner -->
     <div class="card shadow-sm border-0 mb-4">
@@ -30,9 +68,9 @@
                         <div class="badge bg-success mb-2">Stage 1: Completed</div>
                         <div class="fw-bold text-dark mb-1">Attended by:</div>
                         {% for m in submission.attended_by.all %}
-                            <div class="small fw-semibold text-dark">{{ m.name }} <span class="text-muted fw-normal">({{ m.designation }})</span></div>
+                        <div class="small fw-semibold text-dark">{{ m.name }} <span class="text-muted fw-normal">({{ m.designation }})</span></div>
                         {% empty %}
-                            <div class="small text-muted fst-italic">None</div>
+                        <div class="small text-muted fst-italic">None</div>
                         {% endfor %}
                         <div class="small text-muted mt-2 border-top pt-1">{{ submission.submitted_at|date:"d M Y, h:i A" }}</div>
                     </div>
@@ -42,36 +80,36 @@
                 <!-- Step 2 -->
                 <div class="col-md-4">
                     {% if submission.supervised_by %}
-                        <div class="p-3 rounded bg-primary-subtle border border-primary-subtle">
-                            <div class="badge bg-primary mb-2">Stage 2: Reviewed & Forwarded</div>
-                            <div class="fw-bold text-dark">Supervised by {{ submission.supervised_by.get_full_name|default:submission.supervised_by.username }}</div>
-                            <div class="small text-secondary">Shift IT Supervisor</div>
-                            <div class="small text-muted mt-1">{{ submission.supervised_at|date:"d M Y, h:i A" }}</div>
-                        </div>
+                    <div class="p-3 rounded bg-primary-subtle border border-primary-subtle">
+                        <div class="badge bg-primary mb-2">Stage 2: Reviewed & Forwarded</div>
+                        <div class="fw-bold text-dark">Supervised by {{ submission.supervised_by_display }}</div>
+                        <div class="small text-secondary">Shift IT Supervisor</div>
+                        <div class="small text-muted mt-1">{{ submission.supervised_at|date:"d M Y, h:i A" }}</div>
+                    </div>
                     {% else %}
-                        <div class="p-3 rounded bg-light border">
-                            <div class="badge bg-secondary mb-2">Stage 2: Pending</div>
-                            <div class="fw-bold text-secondary">Awaiting Supervisor</div>
-                            <div class="small text-muted">1 of 3 Supervisors will review & forward</div>
-                        </div>
+                    <div class="p-3 rounded bg-light border">
+                        <div class="badge bg-secondary mb-2">Stage 2: Pending</div>
+                        <div class="fw-bold text-secondary">Awaiting Supervisor</div>
+                        <div class="small text-muted">1 of 3 Supervisors will review & forward</div>
+                    </div>
                     {% endif %}
                 </div>
 
                 <!-- Step 3 -->
                 <div class="col-md-4">
                     {% if submission.approved_by %}
-                        <div class="p-3 rounded bg-success-subtle border border-success-subtle">
-                            <div class="badge bg-success mb-2">Stage 3: Approved</div>
-                            <div class="fw-bold text-dark">Approved by {{ submission.approved_by.get_full_name|default:submission.approved_by.username }}</div>
-                            <div class="small text-secondary">Assistant / Deputy Manager</div>
-                            <div class="small text-muted mt-1">{{ submission.approved_at|date:"d M Y, h:i A" }}</div>
-                        </div>
+                    <div class="p-3 rounded bg-success-subtle border border-success-subtle">
+                        <div class="badge bg-success mb-2">Stage 3: Approved</div>
+                        <div class="fw-bold text-dark">Approved by {{ submission.approved_by_display }}</div>
+                        <div class="small text-secondary">Assistant / Deputy Manager</div>
+                        <div class="small text-muted mt-1">{{ submission.approved_at|date:"d M Y, h:i A" }}</div>
+                    </div>
                     {% else %}
-                        <div class="p-3 rounded bg-light border">
-                            <div class="badge bg-secondary mb-2">Stage 3: Pending</div>
-                            <div class="fw-bold text-secondary">Final Approval</div>
-                            <div class="small text-muted">Assistant / Deputy Manager sign-off</div>
-                        </div>
+                    <div class="p-3 rounded bg-light border">
+                        <div class="badge bg-secondary mb-2">Stage 3: Pending</div>
+                        <div class="fw-bold text-secondary">Final Approval</div>
+                        <div class="small text-muted">Assistant / Deputy Manager sign-off</div>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -104,12 +142,13 @@
                     <td style="width: 28%;">{{ submission.report_date|date:"d M Y" }}</td>
                 </tr>
                 {% for key, fld in submission.equipment_data.items %}
-                    {% if forloop.counter0|divisibleby:2 %}<tr>{% endif %}
-                        <th>{{ fld.label }}</th>
-                        <td>{{ fld.value|default:"—" }}</td>
+                {% if forloop.counter0|divisibleby:2 %}<tr>{% endif %}
+                    <th>{{ fld.label }}</th>
+                    <td>{{ fld.value|default:"—" }}</td>
                     {% if forloop.counter|divisibleby:2 or forloop.last %}
-                        {% if forloop.last and not forloop.counter|divisibleby:2 %}<th></th><td></td>{% endif %}
-                    </tr>{% endif %}
+                    {% if forloop.last and not forloop.counter|divisibleby:2 %}<th></th>
+                    <td></td>{% endif %}
+                </tr>{% endif %}
                 {% endfor %}
                 <tr>
                     <th>Outage Reported At</th>
@@ -134,7 +173,7 @@
 
         <!-- Section 1 -->
         <div class="bifpcl-section-header">Inspection and Diagnostic Checklist</div>
-        <table class="bifpcl-table">
+        <table class="bifpcl-table bifpcl-datatable" id="detailDiagTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
             <thead>
                 <tr>
                     <th style="width: 50%;">Inspection Item</th>
@@ -146,13 +185,13 @@
             </thead>
             <tbody>
                 {% for item_id, item in submission.diagnostics_data.items %}
-                    <tr>
-                        <td>{{ item.text }}</td>
-                        <td class="text-center">{% if item.status == 'Yes' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                        <td class="text-center">{% if item.status == 'No' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                        <td class="text-center">{% if item.status == 'N/A' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                        <td>{{ item.remarks|default:"" }}</td>
-                    </tr>
+                <tr>
+                    <td>{{ item.text }}</td>
+                    <td class="text-center">{% if item.status == 'Yes' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                    <td class="text-center">{% if item.status == 'No' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                    <td class="text-center">{% if item.status == 'N/A' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                    <td>{{ item.remarks|default:"" }}</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -169,47 +208,48 @@
             </thead>
             <tbody>
                 {% for opt in submission.template.fault_options_schema %}
-                    <tr>
-                        <td class="text-center">{% if submission.fault_selected == opt.key %}&#9632;{% else %}&#9633;{% endif %}</td>
-                        <td>
-                            <strong>{{ opt.label }}</strong><br>
-                            <span class="small text-muted">{{ opt.desc }}</span>
-                        </td>
-                        {% if forloop.first %}
-                            <td rowspan="{{ submission.template.fault_options_schema|length }}" class="align-top font-monospace small">
-                                {{ submission.action_taken_details|linebreaks }}
-                            </td>
-                        {% endif %}
-                    </tr>
+                <tr>
+                    <td class="text-center">{% if submission.fault_selected == opt.key %}&#9632;{% else %}&#9633;{% endif %}</td>
+                    <td>
+                        <strong>{{ opt.label }}</strong><br>
+                        <span class="small text-muted">{{ opt.desc }}</span>
+                    </td>
+                    {% if forloop.first %}
+                    <td rowspan="{{ submission.template.fault_options_schema|length }}"
+                        class="align-top font-monospace small">
+                        {{ submission.action_taken_details|linebreaks }}
+                    </td>
+                    {% endif %}
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
 
         <!-- Section 3 -->
         {% if submission.template.materials_enabled and submission.materials_data %}
-            <div class="bifpcl-section-header">Materials, Warranty and Disposal</div>
-            <table class="bifpcl-table">
-                <thead>
-                    <tr>
-                        <th style="width: 6%; text-align: center;">Sl.</th>
-                        <th>Material Description</th>
-                        <th>Model / Code</th>
-                        <th style="width: 8%; text-align: center;">Qty</th>
-                        <th>Store Ref</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for m in submission.materials_data %}
-                        <tr>
-                            <td class="text-center">{{ m.sl }}</td>
-                            <td>{{ m.desc }}</td>
-                            <td>{{ m.model }}</td>
-                            <td class="text-center">{{ m.qty }}</td>
-                            <td>{{ m.ref }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="bifpcl-section-header">Materials, Warranty and Disposal</div>
+        <table class="bifpcl-table bifpcl-datatable" id="detailMaterialsTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+            <thead>
+                <tr>
+                    <th style="width: 6%; text-align: center;">Sl.</th>
+                    <th>Material Description</th>
+                    <th>Model / Code</th>
+                    <th style="width: 8%; text-align: center;">Qty</th>
+                    <th>Store Ref</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in submission.materials_data %}
+                <tr>
+                    <td class="text-center">{{ m.sl }}</td>
+                    <td>{{ m.desc }}</td>
+                    <td>{{ m.model }}</td>
+                    <td class="text-center">{{ m.qty }}</td>
+                    <td>{{ m.ref }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% endif %}
 
         <!-- Section 4 -->
@@ -220,9 +260,9 @@
                     <td colspan="2">
                         <div class="row g-1">
                             {% for v in submission.template.verification_items_schema %}
-                                <div class="col-sm-6 small">
-                                    {% if v in submission.verification_checks %}&#9745;{% else %}&#9744;{% endif %} {{ v }}
-                                </div>
+                            <div class="col-sm-6 small">
+                                {% if v in submission.verification_checks %}&#9745;{% else %}&#9744;{% endif %} {{ v }}
+                            </div>
                             {% endfor %}
                         </div>
                     </td>
@@ -254,36 +294,36 @@
                 <tr>
                     <td>
                         {% for m in submission.attended_by.all %}
-                            <strong>{{ m.name }}</strong><br>
-                            <span class="text-muted small">{{ m.designation }}</span><br>
+                        <strong>{{ m.name }}</strong><br>
+                        <span class="text-muted small">{{ m.designation }}</span><br>
                         {% empty %}
-                            <span class="text-muted fst-italic">None recorded</span><br>
+                        <span class="text-muted fst-italic">None recorded</span><br>
                         {% endfor %}
                         <div class="small mt-1">Date: {{ submission.submitted_at|date:"d-m-Y" }}</div>
                     </td>
 
                     <td>
                         {% if submission.supervised_by %}
-                            <strong>{{ submission.supervised_by.get_full_name|default:submission.supervised_by.username }}</strong><br>
-                            <span class="text-muted small">Shift IT Supervisor</span><br>
-                            <div class="small mt-1">Date: {{ submission.supervised_at|date:"d-m-Y" }}</div>
-                            {% if submission.supervisor_remarks %}
-                                <div class="small text-primary mt-1"><em>"{{ submission.supervisor_remarks }}"</em></div>
-                            {% endif %}
+                        <strong>{{ submission.supervised_by_display }}</strong><br>
+                        <span class="text-muted small">Shift IT Supervisor</span><br>
+                        <div class="small mt-1">Date: {{ submission.supervised_at|date:"d-m-Y" }}</div>
+                        {% if submission.supervisor_remarks %}
+                        <div class="small text-primary mt-1"><em>"{{ submission.supervisor_remarks }}"</em></div>
+                        {% endif %}
                         {% else %}
-                            <span class="text-muted fst-italic">Pending Supervisor Review</span>
+                        <span class="text-muted fst-italic">Pending Supervisor Review</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if submission.approved_by %}
-                            <strong>{{ submission.approved_by.get_full_name|default:submission.approved_by.username }}</strong><br>
-                            <span class="text-muted small">Assistant / Deputy Manager</span><br>
-                            <div class="small mt-1">Date: {{ submission.approved_at|date:"d-m-Y" }}</div>
-                            {% if submission.manager_remarks %}
-                                <div class="small text-success mt-1"><em>"{{ submission.manager_remarks }}"</em></div>
-                            {% endif %}
+                        <strong>{{ submission.approved_by_display }}</strong><br>
+                        <span class="text-muted small">Assistant / Deputy Manager</span><br>
+                        <div class="small mt-1">Date: {{ submission.approved_at|date:"d-m-Y" }}</div>
+                        {% if submission.manager_remarks %}
+                        <div class="small text-success mt-1"><em>"{{ submission.manager_remarks }}"</em></div>
+                        {% endif %}
                         {% else %}
-                            <span class="text-muted fst-italic">Pending Final Approval</span>
+                        <span class="text-muted fst-italic">Pending Final Approval</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -291,7 +331,8 @@
         </table>
 
         <div class="bifpcl-doc-footer">
-            <div><strong>Doc No:</strong> {{ submission.template.doc_no }} &bull; {{ submission.template.revision }}</div>
+            <div><strong>Doc No:</strong> {{ submission.template.doc_no }} &bull; {{ submission.template.revision }}
+            </div>
             <div><strong>Effective Date:</strong> {{ submission.template.effective_date|date:"d-m-Y" }}</div>
             <div><strong>Retention:</strong> {{ submission.template.retention_period }}</div>
             <div><strong>Page:</strong> 1 of 1</div>

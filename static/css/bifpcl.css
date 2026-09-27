@@ -29,7 +29,7 @@ body {
 /* Header & Navigation */
 .navbar-bifpcl {
     background: linear-gradient(135deg, #0d3b66 0%, #082645 100%);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
     border-bottom: 3px solid var(--bifpcl-green);
 }
 
@@ -68,7 +68,7 @@ body {
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
     border-radius: 6px;
-    border: 1px solid rgba(0,135,81,0.25);
+    border: 1px solid rgba(0, 135, 81, 0.25);
 }
 
 .badge-status {
@@ -110,7 +110,7 @@ body {
     max-width: 900px;
     margin: 2rem auto;
     padding: 2.5rem 3rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
     border-radius: 4px;
     border: 1px solid #cbd5e1;
 }
@@ -162,7 +162,8 @@ body {
     border: 1px solid #000000;
 }
 
-.bifpcl-table th, .bifpcl-table td {
+.bifpcl-table th,
+.bifpcl-table td {
     border: 1px solid #000000;
     padding: 6px 10px;
     vertical-align: middle;
@@ -234,9 +235,15 @@ body {
         background-color: #ffffff;
         font-size: 11pt;
     }
-    .navbar-bifpcl, .btn-action-panel, .no-print, nav, footer.page-footer {
+
+    .navbar-bifpcl,
+    .btn-action-panel,
+    .no-print,
+    nav,
+    footer.page-footer {
         display: none !important;
     }
+
     .bifpcl-doc-paper {
         max-width: 100% !important;
         margin: 0 !important;
@@ -244,10 +251,147 @@ body {
         box-shadow: none !important;
         border: none !important;
     }
-    .bifpcl-table, .signature-box-table {
+
+    .bifpcl-table,
+    .signature-box-table {
         border: 1px solid #000000 !important;
     }
-    .bifpcl-table th, .bifpcl-table td, .signature-box-table th, .signature-box-table td {
+
+    .bifpcl-table th,
+    .bifpcl-table td,
+    .signature-box-table th,
+    .signature-box-table td {
         border: 1px solid #000000 !important;
     }
+}
+
+/* ========================================================
+   DataTables Custom Styling for BIFPCL Portal
+   ======================================================== */
+.dt-container {
+    padding: 0.85rem 1.25rem 1.25rem 1.25rem;
+}
+
+.dt-container .dt-layout-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.dt-container .dt-layout-row:first-child {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+}
+
+.dt-container .dt-layout-row:last-child {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bifpcl-gray-200);
+}
+
+.dt-container .dt-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dt-container .dt-search input {
+    border-radius: 6px;
+    border: 1px solid var(--bifpcl-gray-300);
+    padding: 0.4rem 0.85rem;
+    font-size: 0.875rem;
+    outline: none;
+    min-width: 240px;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+}
+
+.dt-container .dt-search input:focus {
+    border-color: var(--bifpcl-primary);
+    box-shadow: 0 0 0 3px rgba(13, 59, 102, 0.12);
+}
+
+.dt-container .dt-length {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--bifpcl-gray-600);
+}
+
+.dt-container .dt-length select {
+    border-radius: 6px;
+    border: 1px solid var(--bifpcl-gray-300);
+    padding: 0.35rem 1.8rem 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    outline: none;
+    background-color: #ffffff;
+}
+
+.dt-container .dt-info {
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: var(--bifpcl-gray-600);
+}
+
+.dt-container .dt-paging {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dt-container .pagination {
+    margin-bottom: 0;
+    gap: 2px;
+}
+
+.dt-container .pagination .page-item .page-link {
+    color: var(--bifpcl-primary);
+    border-radius: 6px;
+    border: 1px solid var(--bifpcl-gray-300);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.dt-container .pagination .page-item:hover .page-link {
+    background-color: var(--bifpcl-gray-100);
+    border-color: var(--bifpcl-primary);
+}
+
+.dt-container .pagination .page-item.active .page-link {
+    background-color: var(--bifpcl-primary) !important;
+    border-color: var(--bifpcl-primary) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(13, 59, 102, 0.25);
+}
+
+.dt-container .pagination .page-item.disabled .page-link {
+    color: #94a3b8;
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+/* Sorting styling */
+table.dataTable thead th {
+    position: relative;
+    user-select: none;
+    font-weight: 700 !important;
+    letter-spacing: 0.2px;
+}
+
+table.dataTable thead th.dt-orderable-asc:hover,
+table.dataTable thead th.dt-orderable-desc:hover {
+    background-color: rgba(13, 59, 102, 0.05);
+}
+
+table.dataTable tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+table.dataTable tbody tr:hover {
+    background-color: #f1f7fd !important;
 }

@@ -12,7 +12,8 @@
                 <span class="badge bg-secondary px-3 py-1 rounded-pill">Audit Trail</span>
             </div>
             <p class="text-secondary small mb-0 mt-1">
-                Centralized, tamper-evident repository for all 12 BIFPCL IT Checklists. Search, filter, and inspect past maintenance and troubleshooting records.
+                Centralized, tamper-evident repository for all 12 BIFPCL IT Checklists. Search, filter, and inspect past
+                maintenance and troubleshooting records.
             </p>
         </div>
         <div>
@@ -31,9 +32,9 @@
                     <select name="template" class="form-select form-select-sm">
                         <option value="">All 12 Checklists</option>
                         {% for t in templates %}
-                            <option value="{{ t.id }}" {% if selected_template == t.id|stringformat:"i" %}selected{% endif %}>
-                                {{ t.doc_no }} - {{ t.title|truncatechars:35 }}
-                            </option>
+                        <option value="{{ t.id }}" {% if selected_template == t.id|stringformat:"i" %}selected{% endif %}>
+                            {{ t.doc_no }} - {{ t.title|truncatechars:35 }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -42,9 +43,9 @@
                     <select name="technician" class="form-select form-select-sm">
                         <option value="">All IT Technicians</option>
                         {% for m in team_members %}
-                            <option value="{{ m.id }}" {% if selected_technician == m.id|stringformat:"i" %}selected{% endif %}>
-                                {{ m.name }}
-                            </option>
+                        <option value="{{ m.id }}" {% if selected_technician == m.id|stringformat:"i" %}selected{% endif %}>
+                            {{ m.name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -52,21 +53,27 @@
                     <label class="form-label small fw-semibold text-muted mb-1">Workflow Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All Statuses</option>
-                        <option value="SUBMITTED" {% if selected_status == 'SUBMITTED' %}selected{% endif %}>Submitted (Supervisor Queue)</option>
-                        <option value="FORWARDED" {% if selected_status == 'FORWARDED' %}selected{% endif %}>Forwarded (Manager Queue)</option>
-                        <option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Final Approved</option>
-                        <option value="RETURNED" {% if selected_status == 'RETURNED' %}selected{% endif %}>Returned for Revision</option>
+                        <option value="SUBMITTED" {% if selected_status == 'SUBMITTED' %}selected{% endif %}>Submitted
+                            (Supervisor Queue)</option>
+                        <option value="FORWARDED" {% if selected_status == 'FORWARDED' %}selected{% endif %}>Forwarded
+                            (Manager Queue)</option>
+                        <option value="APPROVED" {% if selected_status == 'APPROVED' %}selected{% endif %}>Final Approved
+                        </option>
+                        <option value="RETURNED" {% if selected_status == 'RETURNED' %}selected{% endif %}>Returned for
+                            Revision</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small fw-semibold text-muted mb-1">Search Keywords</label>
-                    <input type="text" name="q" value="{{ search_q }}" class="form-control form-control-sm" placeholder="Ref No, Work Request, Camera ID...">
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control form-control-sm"
+                        placeholder="Ref No, Work Request, Camera ID...">
                 </div>
                 <div class="col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-sm btn-primary w-100 rounded-pill fw-semibold">
                         <i class="bi bi-funnel me-1"></i> Filter
                     </button>
-                    <a href="{% url 'audit_archive' %}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Reset Filters">
+                    <a href="{% url 'audit_archive' %}" class="btn btn-sm btn-outline-secondary rounded-pill"
+                        title="Reset Filters">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
@@ -85,7 +92,7 @@
             </span>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 bifpcl-datatable" id="archiveTable" data-order-col="3" data-order-dir="desc" data-disable-last="true" data-page-length="10">
                 <thead class="table-light small text-muted">
                     <tr>
                         <th class="ps-4">Tracking Ref</th>
@@ -100,69 +107,73 @@
                 </thead>
                 <tbody>
                     {% for sub in submissions %}
-                        <tr>
-                            <td class="ps-4 font-monospace fw-bold text-primary small">
-                                {{ sub.tracking_no }}
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
-                                <div class="small text-muted">{{ sub.template.doc_no }}</div>
-                            </td>
-                            <td>
-                                {% for m in sub.attended_by.all %}
-                                    <div class="fw-medium text-dark">{{ m.name }}</div>
-                                    <div class="small text-muted" style="font-size: 0.72rem;">{{ m.designation }}</div>
-                                {% empty %}
-                                    <span class="text-muted fst-italic">None</span>
-                                {% endfor %}
-                            </td>
+                    <tr>
+                        <td class="ps-4 font-monospace fw-bold text-primary small">
+                            {{ sub.tracking_no }}
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ sub.template.title }}</div>
+                            <div class="small text-muted">{{ sub.template.doc_no }}</div>
+                        </td>
+                        <td>
+                            {% for m in sub.attended_by.all %}
+                            <div class="fw-medium text-dark">{{ m.name }}</div>
+                            <div class="small text-muted" style="font-size: 0.72rem;">{{ m.designation }}</div>
+                            {% empty %}
+                            <span class="text-muted fst-italic">None</span>
+                            {% endfor %}
+                        </td>
 
-                            <td class="small text-secondary">
-                                {{ sub.report_date|date:"d M Y" }}
-                            </td>
-                            <td>
-                                {% if sub.status == 'SUBMITTED' %}
-                                    <span class="badge-status status-submitted">Pending Supervisor</span>
-                                {% elif sub.status == 'FORWARDED' %}
-                                    <span class="badge-status status-forwarded">Pending Manager</span>
-                                {% elif sub.status == 'APPROVED' %}
-                                    <span class="badge-status status-approved">Approved</span>
-                                {% else %}
-                                    <span class="badge-status status-returned">Returned</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">
-                                {% if sub.supervised_by %}
-                                    <span class="text-primary fw-medium">{{ sub.supervised_by.get_full_name|default:sub.supervised_by.username }}</span>
-                                    <div class="text-muted" style="font-size: 0.72rem;">{{ sub.supervised_at|date:"d-m-Y" }}</div>
-                                {% else %}
-                                    <span class="text-muted fst-italic">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="small">
-                                {% if sub.approved_by %}
-                                    <span class="text-success fw-bold">{{ sub.approved_by.get_full_name|default:sub.approved_by.username }}</span>
-                                    <div class="text-muted" style="font-size: 0.72rem;">{{ sub.approved_at|date:"d-m-Y" }}</div>
-                                {% else %}
-                                    <span class="text-muted fst-italic">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                <a href="{% url 'checklist_detail' sub.id %}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Full Report">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'checklist_print' sub.id %}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 ms-1" title="Print Official BIFPCL Copy">
-                                    <i class="bi bi-printer"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
-                                No records matched the selected filter criteria.
-                            </td>
-                        </tr>
+                        <td class="small text-secondary">
+                            {{ sub.report_date|date:"d M Y" }}
+                        </td>
+                        <td>
+                            {% if sub.status == 'SUBMITTED' %}
+                            <span class="badge-status status-submitted">Pending Supervisor</span>
+                            {% elif sub.status == 'FORWARDED' %}
+                            <span class="badge-status status-forwarded">Pending Manager</span>
+                            {% elif sub.status == 'APPROVED' %}
+                            <span class="badge-status status-approved">Approved</span>
+                            {% else %}
+                            <span class="badge-status status-returned">Returned</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if sub.supervised_by %}
+                            <span class="text-primary fw-medium">{{ sub.supervised_by_display }}</span>
+                            <div class="text-muted" style="font-size: 0.72rem;">{{ sub.supervised_at|date:"d-m-Y" }}
+                            </div>
+                            {% else %}
+                            <span class="text-muted fst-italic">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if sub.approved_by %}
+                            <span class="text-success fw-bold">{{ sub.approved_by_display }}</span>
+                            <div class="text-muted" style="font-size: 0.72rem;">{{ sub.approved_at|date:"d-m-Y" }}</div>
+                            {% else %}
+                            <span class="text-muted fst-italic">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'checklist_detail' sub.id %}"
+                                class="btn btn-sm btn-outline-secondary py-1 px-2" title="View Full Report">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'checklist_print' sub.id %}" target="_blank"
+                                class="btn btn-sm btn-outline-primary py-1 px-2 ms-1"
+                                title="Print Official BIFPCL Copy">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                            {% if sub.status == 'RETURNED' %}
+                            <a href="{% url 'checklist_edit' sub.id %}"
+                                class="btn btn-sm btn-warning text-dark py-1 px-2 ms-1 fw-medium"
+                                title="Edit & Resubmit Corrections">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
