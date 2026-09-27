@@ -39,22 +39,28 @@
                     <table class="table table-bordered table-sm small mb-4">
                         <tbody>
                             <tr>
-                                <th class="table-light" style="width: 25%;">Work Request No.</th>
+                                <th class="table-light" style="width: 25%;">{{ submission.template.job_id_label }}</th>
                                 <td style="width: 25%;">{{ submission.work_request_no|default:"N/A" }}</td>
-                                <th class="table-light" style="width: 25%;">Report Date</th>
+                                <th class="table-light" style="width: 25%;">{{ submission.template.date_label }}</th>
                                 <td style="width: 25%;">{{ submission.report_date|date:"d M Y" }}</td>
                             </tr>
-                            {% for key, fld in submission.equipment_data.items %}
+                            {% for fld in submission.formatted_equipment_fields %}
                             <tr>
                                 <th class="table-light">{{ fld.label }}</th>
-                                <td colspan="3" class="fw-semibold text-dark">{{ fld.value|default:"Not specified" }}
+                                <td colspan="3" class="fw-semibold text-dark">
+                                    {% if fld.is_options %}
+                                        <span class="badge bg-primary me-1">{{ fld.value|default:"Not specified" }}</span>
+                                    {% else %}
+                                        {{ fld.value|default:"Not specified" }}
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
+                            {% if submission.template.has_outage_tracking %}
                             <tr>
-                                <th class="table-light">Outage Reported At</th>
+                                <th class="table-light">{{ submission.template.outage_reported_label }}</th>
                                 <td>{{ submission.outage_reported_at|date:"d-m-Y H:i"|default:"N/A" }}</td>
-                                <th class="table-light">Site Arrival At</th>
+                                <th class="table-light">{{ submission.template.site_arrival_label }}</th>
                                 <td>{{ submission.site_arrival_at|date:"d-m-Y H:i"|default:"N/A" }}</td>
                             </tr>
                             <tr>
@@ -69,11 +75,201 @@
                                 <th class="table-light">Contact No.</th>
                                 <td>{{ submission.contact_no|default:"N/A" }}</td>
                             </tr>
+                            {% endif %}
                         </tbody>
                     </table>
 
+                    {% if submission.template.is_ofc %}
+                    <!-- OFC Section 1: Cable Laying Details -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Cable Laying Details</h3>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorOfcCableTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sl.</th>
+                                    <th>Cable / Drum ID</th>
+                                    <th>From Marker</th>
+                                    <th>To Marker</th>
+                                    <th>Path / Method</th>
+                                    <th class="text-center">Start (m)</th>
+                                    <th class="text-center">End (m)</th>
+                                    <th class="text-center">Laid (m)</th>
+                                    <th class="text-center">Slack (m)</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in submission.custom_data.cable_laying %}
+                                <tr>
+                                    <td>{{ row.sl|default:forloop.counter }}</td>
+                                    <td class="fw-semibold">{{ row.drum }}</td>
+                                    <td>{{ row.from }}</td>
+                                    <td>{{ row.to }}</td>
+                                    <td><span class="badge bg-secondary">{{ row.path }}</span></td>
+                                    <td class="text-center">{{ row.start }}</td>
+                                    <td class="text-center">{{ row.end }}</td>
+                                    <td class="text-center fw-bold text-success">{{ row.laid }}</td>
+                                    <td class="text-center">{{ row.slack }}</td>
+                                    <td>{{ row.remarks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold bg-light">
+                                    <td colspan="7" class="text-end">Total Cable Laid (m):</td>
+                                    <td class="text-center text-success">{{ submission.custom_data.total_cable_laid|default:"—" }}</td>
+                                    <td class="text-center">{{ submission.custom_data.total_slack_reserve|default:"—" }}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- OFC Section 2: Joint Location Summary -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Joint Location Summary</h3>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorOfcJointTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Joint No.</th>
+                                    <th>Joint Location</th>
+                                    <th>Closure ID</th>
+                                    <th>From Cable</th>
+                                    <th>To Cable</th>
+                                    <th class="text-center">Cores</th>
+                                    <th class="text-center">Date</th>
+                                    <th>Splicer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in submission.custom_data.joint_summary %}
+                                <tr>
+                                    <td class="font-monospace fw-semibold">{{ row.joint_no }}</td>
+                                    <td>{{ row.location }}</td>
+                                    <td>{{ row.box_id }}</td>
+                                    <td>{{ row.in_cable }}</td>
+                                    <td>{{ row.out_cable }}</td>
+                                    <td class="text-center fw-bold">{{ row.cores }}</td>
+                                    <td class="text-center">{{ row.date }}</td>
+                                    <td>{{ row.splicer }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- OFC Section 3: Jointing / Core Splice Schedule -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Jointing / Core Splice Schedule</h3>
+                    <div class="bg-light p-2 border mb-2 small d-flex flex-wrap gap-4">
+                        <div><strong>Joint No.:</strong> {{ submission.custom_data.splice_header.joint_no|default:"—" }}</div>
+                        <div><strong>Location:</strong> {{ submission.custom_data.splice_header.location|default:"—" }}</div>
+                        <div><strong>Closure ID:</strong> {{ submission.custom_data.splice_header.closure_id|default:"—" }}</div>
+                        <div><strong>Tray No.:</strong> {{ submission.custom_data.splice_header.tray_no|default:"—" }}</div>
+                    </div>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorOfcSpliceTable" data-order-col="0" data-order-dir="asc" data-page-length="12">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sl.</th>
+                                    <th>Incoming Cable</th>
+                                    <th>In Tube/Color</th>
+                                    <th>In Core</th>
+                                    <th>Outgoing Cable</th>
+                                    <th>Out Tube/Color</th>
+                                    <th>Out Core</th>
+                                    <th class="text-center">Splice Loss (dB)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in submission.custom_data.splice_schedule %}
+                                <tr>
+                                    <td>{{ row.sl|default:forloop.counter }}</td>
+                                    <td>{{ row.in_cable }}</td>
+                                    <td>{{ row.in_tube }}</td>
+                                    <td>{{ row.in_core }}</td>
+                                    <td>{{ row.out_cable }}</td>
+                                    <td>{{ row.out_tube }}</td>
+                                    <td>{{ row.out_core }}</td>
+                                    <td class="text-center font-monospace fw-semibold">{{ row.loss }}</td>
+                                    <td>{{ row.remarks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- OFC Section 4: Testing and Acceptance -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Testing & Acceptance</h3>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorOfcTestTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Test</th>
+                                    <th>End A / Location</th>
+                                    <th>End B / Location</th>
+                                    <th>Wavelength</th>
+                                    <th>Measured Loss / Length</th>
+                                    <th class="text-center">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in submission.custom_data.testing_acceptance %}
+                                <tr>
+                                    <td class="fw-semibold">{{ row.test }}</td>
+                                    <td>{{ row.end_a }}</td>
+                                    <td>{{ row.end_b }}</td>
+                                    <td>{{ row.wavelength }}</td>
+                                    <td class="font-monospace">{{ row.loss }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if row.result == 'Pass' %}bg-success{% else %}bg-danger{% endif %}">{{ row.result }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- OFC Section 5: Materials and Warranty -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Materials & Warranty</h3>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorMaterialsTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sl.</th>
+                                    <th>Material / Spare Description</th>
+                                    <th>Model / Code</th>
+                                    <th class="text-center">Qty</th>
+                                    <th>Store Ref</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in submission.materials_data %}
+                                <tr>
+                                    <td>{{ m.sl }}</td>
+                                    <td>{{ m.desc }}</td>
+                                    <td>{{ m.model|default:"—" }}</td>
+                                    <td class="text-center">{{ m.qty }}</td>
+                                    <td>{{ m.ref|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small text-muted mb-4 bg-light p-2 border">
+                        <strong>Warranty / AMC:</strong> <span class="badge bg-secondary">{{ submission.warranty_status|default:"Out of Warranty" }}</span> &bull;
+                        <strong>Vendor / PO Ref.:</strong> {{ submission.vendor_po_ref|default:"—" }}
+                    </div>
+
+                    <!-- OFC Section 6: Remarks -->
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Remarks</h3>
+                    <div class="bg-light p-3 border rounded small mb-4">
+                        <strong>General Remarks:</strong>
+                        <p class="mb-0 mt-1">{{ submission.custom_data.general_remarks|default:submission.additional_findings|default:"Nil"|linebreaks }}</p>
+                    </div>
+                    {% else %}
                     <!-- Inspection and Diagnostic Checklist -->
-                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Inspection and Diagnostic Checklist</h3>
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">{{ submission.template.physical_heading }}</h3>
                     <div class="table-responsive mb-4">
                         <table class="table table-bordered table-sm small mb-0 bifpcl-datatable" id="supervisorDiagTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
                             <thead class="table-light">
@@ -105,7 +301,8 @@
                         </table>
                     </div>
 
-                    <!-- Fault Classification and Action Taken -->
+                    <!-- Fault Classification and Action Taken (Troubleshooting Checklists Only) -->
+                    {% if submission.template.fault_options_schema %}
                     <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Fault Classification & Action Taken</h3>
                     <div class="bg-light p-3 rounded border mb-4">
                         <div class="mb-2">
@@ -117,6 +314,7 @@
                             <p class="mb-0 text-dark font-monospace small bg-white p-2 rounded border">{{ submission.action_taken_details|linebreaks }}</p>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Materials & Spares -->
                     {% if submission.materials_data %}
@@ -152,8 +350,7 @@
                     {% endif %}
 
                     <!-- Restoration Verification -->
-                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">Restoration Verification & Final Status
-                    </h3>
+                    <h3 class="h6 fw-bold text-dark border-bottom pb-2 mb-3">{{ submission.template.verification_heading }} & Final Status</h3>
                     <div class="row g-2 mb-3">
                         {% for check in submission.verification_checks %}
                         <div class="col-sm-6">
@@ -171,6 +368,7 @@
                         </div>
                         {% endif %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

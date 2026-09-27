@@ -115,6 +115,116 @@ def _extract_submission_data(request, template_obj):
     else:
         client_ip = request.META.get('REMOTE_ADDR')
 
+    # Optical Fiber Cable (F/12) Custom Sections Data
+    custom_data = {}
+    if template_obj.is_ofc:
+        # 1. Cable Laying Details
+        cl_rows = []
+        cl_drums = request.POST.getlist('ofc_cl_drum[]')
+        cl_froms = request.POST.getlist('ofc_cl_from[]')
+        cl_tos = request.POST.getlist('ofc_cl_to[]')
+        cl_paths = request.POST.getlist('ofc_cl_path[]')
+        cl_starts = request.POST.getlist('ofc_cl_start[]')
+        cl_ends = request.POST.getlist('ofc_cl_end[]')
+        cl_laids = request.POST.getlist('ofc_cl_laid[]')
+        cl_slacks = request.POST.getlist('ofc_cl_slack[]')
+        cl_remarks = request.POST.getlist('ofc_cl_remarks[]')
+        for i in range(len(cl_drums)):
+            cl_rows.append({
+                'sl': i + 1,
+                'drum': cl_drums[i].strip() if i < len(cl_drums) else '',
+                'from': cl_froms[i].strip() if i < len(cl_froms) else '',
+                'to': cl_tos[i].strip() if i < len(cl_tos) else '',
+                'path': cl_paths[i].strip() if i < len(cl_paths) else 'Duct',
+                'start': cl_starts[i].strip() if i < len(cl_starts) else '',
+                'end': cl_ends[i].strip() if i < len(cl_ends) else '',
+                'laid': cl_laids[i].strip() if i < len(cl_laids) else '',
+                'slack': cl_slacks[i].strip() if i < len(cl_slacks) else '',
+                'remarks': cl_remarks[i].strip() if i < len(cl_remarks) else '',
+            })
+
+        # 2. Joint Location Summary
+        js_rows = []
+        js_nos = request.POST.getlist('ofc_js_no[]')
+        js_locs = request.POST.getlist('ofc_js_loc[]')
+        js_boxes = request.POST.getlist('ofc_js_box[]')
+        js_in_cables = request.POST.getlist('ofc_js_in[]')
+        js_out_cables = request.POST.getlist('ofc_js_out[]')
+        js_cores = request.POST.getlist('ofc_js_cores[]')
+        js_dates = request.POST.getlist('ofc_js_date[]')
+        js_splicers = request.POST.getlist('ofc_js_splicer[]')
+        for i in range(len(js_nos)):
+            js_rows.append({
+                'joint_no': js_nos[i].strip() if i < len(js_nos) else '',
+                'location': js_locs[i].strip() if i < len(js_locs) else '',
+                'box_id': js_boxes[i].strip() if i < len(js_boxes) else '',
+                'in_cable': js_in_cables[i].strip() if i < len(js_in_cables) else '',
+                'out_cable': js_out_cables[i].strip() if i < len(js_out_cables) else '',
+                'cores': js_cores[i].strip() if i < len(js_cores) else '',
+                'date': js_dates[i].strip() if i < len(js_dates) else '',
+                'splicer': js_splicers[i].strip() if i < len(js_splicers) else '',
+            })
+
+        # 3. Jointing / Core Splice Schedule (12 cores)
+        sp_rows = []
+        sp_in_cables = request.POST.getlist('ofc_sp_in_cable[]')
+        sp_in_tubes = request.POST.getlist('ofc_sp_in_tube[]')
+        sp_in_cores = request.POST.getlist('ofc_sp_in_core[]')
+        sp_out_cables = request.POST.getlist('ofc_sp_out_cable[]')
+        sp_out_tubes = request.POST.getlist('ofc_sp_out_tube[]')
+        sp_out_cores = request.POST.getlist('ofc_sp_out_core[]')
+        sp_losses = request.POST.getlist('ofc_sp_loss[]')
+        sp_remarks = request.POST.getlist('ofc_sp_remarks[]')
+        for i in range(12):
+            sp_rows.append({
+                'sl': i + 1,
+                'in_cable': sp_in_cables[i].strip() if i < len(sp_in_cables) else '',
+                'in_tube': sp_in_tubes[i].strip() if i < len(sp_in_tubes) else '',
+                'in_core': sp_in_cores[i].strip() if i < len(sp_in_cores) else '',
+                'out_cable': sp_out_cable[i].strip() if i < len(sp_out_cables) and 'sp_out_cable' in locals() else (sp_out_cables[i].strip() if i < len(sp_out_cables) else ''),
+                'out_tube': sp_out_tubes[i].strip() if i < len(sp_out_tubes) else '',
+                'out_core': sp_out_cores[i].strip() if i < len(sp_out_cores) else '',
+                'loss': sp_losses[i].strip() if i < len(sp_losses) else '',
+                'remarks': sp_remarks[i].strip() if i < len(sp_remarks) else '',
+            })
+
+        # 4. Testing and Acceptance (5 rows total: 4 on Page 1, 1 on Page 2)
+        ta_rows = []
+        ta_tests = request.POST.getlist('ofc_ta_test[]')
+        ta_end_as = request.POST.getlist('ofc_ta_end_a[]')
+        ta_end_bs = request.POST.getlist('ofc_ta_end_b[]')
+        ta_waves = request.POST.getlist('ofc_ta_wave[]')
+        ta_losses = request.POST.getlist('ofc_ta_loss[]')
+        ta_results = request.POST.getlist('ofc_ta_result[]')
+        for i in range(len(ta_tests)):
+            ta_rows.append({
+                'test': ta_tests[i].strip() if i < len(ta_tests) else 'OTDR',
+                'end_a': ta_end_as[i].strip() if i < len(ta_end_as) else '',
+                'end_b': ta_end_bs[i].strip() if i < len(ta_end_bs) else '',
+                'wavelength': ta_waves[i].strip() if i < len(ta_waves) else '1310 / 1550 nm',
+                'loss': ta_losses[i].strip() if i < len(ta_losses) else '',
+                'result': ta_results[i].strip() if i < len(ta_results) else 'Pass',
+            })
+
+        general_remarks = request.POST.get('ofc_general_remarks', '').strip()
+        additional_findings = general_remarks or additional_findings
+
+        custom_data = {
+            'cable_laying': cl_rows,
+            'total_cable_laid': request.POST.get('ofc_total_cable_laid', '').strip(),
+            'total_slack_reserve': request.POST.get('ofc_total_slack_reserve', '').strip(),
+            'joint_summary': js_rows,
+            'splice_header': {
+                'joint_no': request.POST.get('ofc_sch_joint_no', '').strip(),
+                'location': request.POST.get('ofc_sch_location', '').strip(),
+                'closure_id': request.POST.get('ofc_sch_closure_id', '').strip(),
+                'tray_no': request.POST.get('ofc_sch_tray_no', '').strip(),
+            },
+            'splice_schedule': sp_rows,
+            'testing_acceptance': ta_rows,
+            'general_remarks': general_remarks,
+        }
+
     return {
         'attended_by_ids': attended_by_ids,
         'work_request_no': work_request_no,
@@ -127,6 +237,7 @@ def _extract_submission_data(request, template_obj):
         'total_downtime': total_downtime,
         'equipment_data': equipment_data,
         'diagnostics_data': diagnostics_data,
+        'custom_data': custom_data,
         'fault_selected': fault_selected,
         'action_taken_details': action_taken_details,
         'materials_data': materials_data,
@@ -175,6 +286,36 @@ def _build_form_context(template_obj, submission=None):
     if submission:
         attended_member_ids = list(submission.attended_by.values_list('id', flat=True))
 
+    ofc_data = {}
+    if template_obj.is_ofc:
+        custom_d = submission.custom_data if (submission and submission.custom_data) else {}
+        cl_rows = custom_d.get('cable_laying', [])
+        if not cl_rows:
+            cl_rows = [{'sl': i + 1, 'drum': '', 'from': '', 'to': '', 'path': 'Duct', 'start': '', 'end': '', 'laid': '', 'slack': '', 'remarks': ''} for i in range(3)]
+
+        js_rows = custom_d.get('joint_summary', [])
+        if not js_rows:
+            js_rows = [{'joint_no': f'J-{i+1:02d}', 'location': '', 'box_id': '', 'in_cable': '', 'out_cable': '', 'cores': '', 'date': '', 'splicer': ''} for i in range(3)]
+
+        sp_rows = custom_d.get('splice_schedule', [])
+        if not sp_rows:
+            sp_rows = [{'sl': i + 1, 'in_cable': '', 'in_tube': '', 'in_core': '', 'out_cable': '', 'out_tube': '', 'out_core': '', 'loss': '', 'remarks': ''} for i in range(12)]
+
+        ta_rows = custom_d.get('testing_acceptance', [])
+        if not ta_rows:
+            ta_rows = [{'test': 'OTDR', 'end_a': '', 'end_b': '', 'wavelength': '1310 / 1550 nm', 'loss': '', 'result': 'Pass'} for _ in range(5)]
+
+        ofc_data = {
+            'cable_laying': cl_rows,
+            'total_cable_laid': custom_d.get('total_cable_laid', ''),
+            'total_slack_reserve': custom_d.get('total_slack_reserve', ''),
+            'joint_summary': js_rows,
+            'splice_header': custom_d.get('splice_header', {'joint_no': 'J-01', 'location': '', 'closure_id': '', 'tray_no': 'Tray 01'}),
+            'splice_schedule': sp_rows,
+            'testing_acceptance': ta_rows,
+            'general_remarks': custom_d.get('general_remarks', submission.additional_findings if submission else ''),
+        }
+
     return {
         'template': template_obj,
         'team_members': team_members,
@@ -184,6 +325,7 @@ def _build_form_context(template_obj, submission=None):
         'submission': submission,
         'is_edit': bool(submission),
         'today': timezone.now().strftime('%Y-%m-%d'),
+        'ofc_data': ofc_data,
     }
 
 

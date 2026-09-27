@@ -79,12 +79,14 @@
             <table class="bifpcl-table">
                 <tbody>
                     <tr>
-                        <th style="width: 20%;">Work Request No.</th>
+                        <th style="width: 20%;">{{ template.job_id_label }}</th>
                         <td style="width: 30%;">
-                            <input type="text" name="work_request_no" class="form-control form-control-sm border-0 p-0"
-                                placeholder="e.g. WR-2026-089" value="{{ submission.work_request_no|default:'' }}">
+                            <input type="text" name="work_request_no" class="form-control form-control-sm border-0 p-0 font-monospace fw-semibold"
+                                placeholder="{% if template.default_job_id %}{{ template.default_job_id }}...{% else %}e.g. WR-2026-089{% endif %}"
+                                value="{% if submission.work_request_no %}{{ submission.work_request_no }}{% elif template.default_job_id %}{{ template.default_job_id }}{% endif %}"
+                                {% if not template.has_outage_tracking %}required{% endif %}>
                         </td>
-                        <th style="width: 20%;">Report Date</th>
+                        <th style="width: 20%;">{{ template.date_label }}</th>
                         <td style="width: 30%;">
                             <input type="date" name="report_date" value="{% if submission.report_date %}{{ submission.report_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0" required>
@@ -98,11 +100,24 @@
                     {% endif %}
                         <th>{{ field.label }}{% if field.required %} <span class="text-danger">*</span>{% endif %}</th>
                         <td>
+                            {% if field.options %}
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                {% for opt in field.options %}
+                                <label class="form-check-label small me-2 cursor-pointer">
+                                    <input type="radio" name="eq_{{ field.key }}" value="{{ opt }}"
+                                        class="form-check-input me-1"
+                                        {% if field.current_value == opt or not field.current_value and forloop.first %}checked{% endif %}>
+                                    {{ opt }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% else %}
                             <input type="text" name="eq_{{ field.key }}"
                                 class="form-control form-control-sm border-0 p-0"
                                 placeholder="{{ field.placeholder|default:'' }}"
                                 value="{{ field.current_value|default:'' }}"
                                 {% if field.required %}required{% endif %}>
+                            {% endif %}
                         </td>
                         {% if forloop.counter|divisibleby:2 or forloop.last %}
                         {% if forloop.last and not forloop.counter|divisibleby:2 %}
@@ -113,14 +128,15 @@
                     {% endif %}
                     {% endfor %}
 
+                    {% if template.has_outage_tracking %}
                     <tr>
-                        <th>Outage Reported At</th>
+                        <th>{{ template.outage_reported_label }}</th>
                         <td>
                             <input type="datetime-local" id="outageReportedAt" name="outage_reported_at"
                                 value="{% if submission.outage_reported_at %}{{ submission.outage_reported_at|date:'Y-m-d\TH:i' }}{% endif %}"
                                 class="form-control form-control-sm border-0 p-0">
                         </td>
-                        <th>Site Arrival At</th>
+                        <th>{{ template.site_arrival_label }}</th>
                         <td>
                             <input type="datetime-local" name="site_arrival_at"
                                 value="{% if submission.site_arrival_at %}{{ submission.site_arrival_at|date:'Y-m-d\TH:i' }}{% endif %}"
@@ -156,11 +172,308 @@
                                 placeholder="e.g. Ext: 2104 / 01700-000000">
                         </td>
                     </tr>
+                    {% endif %}
                 </tbody>
             </table>
 
-            <!-- Section 1: Inspection and Diagnostic Checklist -->
-            <div class="bifpcl-section-header">Inspection and Diagnostic Checklist</div>
+            {% if template.is_ofc %}
+            <!-- ========================================== -->
+            <!-- OFC FORM SECTIONS (COMBINED PAGE 1 & PAGE 2) -->
+            <!-- ========================================== -->
+
+            <!-- Section 1: Cable Laying Details (Page 1) -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                <div class="bifpcl-section-header mb-0">Cable Laying Details</div>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 no-print" id="addOfcCableRowBtn">
+                    <i class="bi bi-plus-circle me-1"></i>Add Row
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="bifpcl-table mb-2" id="ofcCableTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 4%; text-align: center;">Sl.</th>
+                            <th style="width: 13%;">Cable / Drum ID</th>
+                            <th style="width: 13%;">From Location / Marker</th>
+                            <th style="width: 13%;">To Location / Marker</th>
+                            <th style="width: 15%;">Path / Method</th>
+                            <th style="width: 8%; text-align: center;">Drum Start (m)</th>
+                            <th style="width: 8%; text-align: center;">Drum End (m)</th>
+                            <th style="width: 8%; text-align: center;">Cable Laid (m)</th>
+                            <th style="width: 8%; text-align: center;">Slack / Reserve (m)</th>
+                            <th style="width: 10%;">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ofcCableTbody">
+                        {% for row in ofc_data.cable_laying %}
+                        <tr>
+                            <td class="text-center align-middle sl-cell">{{ forloop.counter }}</td>
+                            <td><input type="text" name="ofc_cl_drum[]" value="{{ row.drum }}" class="form-control form-control-sm border-0 p-0" placeholder="Drum / Cable ID"></td>
+                            <td><input type="text" name="ofc_cl_from[]" value="{{ row.from }}" class="form-control form-control-sm border-0 p-0" placeholder="From Marker"></td>
+                            <td><input type="text" name="ofc_cl_to[]" value="{{ row.to }}" class="form-control form-control-sm border-0 p-0" placeholder="To Marker"></td>
+                            <td>
+                                <select name="ofc_cl_path[]" class="form-select form-select-sm border-0 p-0">
+                                    <option value="Duct" {% if row.path == 'Duct' or not row.path %}selected{% endif %}>Duct</option>
+                                    <option value="Tray" {% if row.path == 'Tray' %}selected{% endif %}>Tray</option>
+                                    <option value="Aerial" {% if row.path == 'Aerial' %}selected{% endif %}>Aerial</option>
+                                    <option value="Buried" {% if row.path == 'Buried' %}selected{% endif %}>Buried</option>
+                                </select>
+                            </td>
+                            <td><input type="number" step="any" name="ofc_cl_start[]" value="{{ row.start }}" class="form-control form-control-sm border-0 p-0 text-center cl-calc cl-start" placeholder="0"></td>
+                            <td><input type="number" step="any" name="ofc_cl_end[]" value="{{ row.end }}" class="form-control form-control-sm border-0 p-0 text-center cl-calc cl-end" placeholder="0"></td>
+                            <td><input type="number" step="any" name="ofc_cl_laid[]" value="{{ row.laid }}" class="form-control form-control-sm border-0 p-0 text-center cl-laid" placeholder="0"></td>
+                            <td><input type="number" step="any" name="ofc_cl_slack[]" value="{{ row.slack }}" class="form-control form-control-sm border-0 p-0 text-center cl-slack" placeholder="0"></td>
+                            <td><input type="text" name="ofc_cl_remarks[]" value="{{ row.remarks }}" class="form-control form-control-sm border-0 p-0" placeholder="Remarks"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold bg-light">
+                            <td colspan="7" class="text-end">Total Cable Laid (m):</td>
+                            <td><input type="text" id="ofcTotalCableLaid" name="ofc_total_cable_laid" value="{{ ofc_data.total_cable_laid }}" class="form-control form-control-sm border-0 p-0 text-center fw-bold text-success" placeholder="0"></td>
+                            <td class="text-end small">Total Slack:</td>
+                            <td><input type="text" id="ofcTotalSlackReserve" name="ofc_total_slack_reserve" value="{{ ofc_data.total_slack_reserve }}" class="form-control form-control-sm border-0 p-0 text-center fw-bold" placeholder="0"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Section 2: Joint Location Summary (Page 1) -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                <div class="bifpcl-section-header mb-0">Joint Location Summary (multiple joints allowed)</div>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 no-print" id="addOfcJointRowBtn">
+                    <i class="bi bi-plus-circle me-1"></i>Add Row
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="bifpcl-table mb-2" id="ofcJointTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Joint No.</th>
+                            <th style="width: 16%;">Joint Location</th>
+                            <th style="width: 14%;">Closure / Joint Box ID</th>
+                            <th style="width: 16%;">Incoming Cable ID / From</th>
+                            <th style="width: 16%;">Outgoing Cable ID / To</th>
+                            <th style="width: 10%; text-align: center;">Total Cores Spliced</th>
+                            <th style="width: 10%; text-align: center;">Date</th>
+                            <th style="width: 10%;">Splicer</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ofcJointTbody">
+                        {% for row in ofc_data.joint_summary %}
+                        <tr>
+                            <td><input type="text" name="ofc_js_no[]" value="{{ row.joint_no }}" class="form-control form-control-sm border-0 p-0 font-monospace" placeholder="e.g. J-01"></td>
+                            <td><input type="text" name="ofc_js_loc[]" value="{{ row.location }}" class="form-control form-control-sm border-0 p-0" placeholder="Location / MH"></td>
+                            <td><input type="text" name="ofc_js_box[]" value="{{ row.box_id }}" class="form-control form-control-sm border-0 p-0" placeholder="Box ID"></td>
+                            <td><input type="text" name="ofc_js_in[]" value="{{ row.in_cable }}" class="form-control form-control-sm border-0 p-0" placeholder="From / Cable ID"></td>
+                            <td><input type="text" name="ofc_js_out[]" value="{{ row.out_cable }}" class="form-control form-control-sm border-0 p-0" placeholder="To / Cable ID"></td>
+                            <td class="text-center"><input type="number" name="ofc_js_cores[]" value="{{ row.cores }}" class="form-control form-control-sm border-0 p-0 text-center" placeholder="12"></td>
+                            <td><input type="date" name="ofc_js_date[]" value="{{ row.date }}" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="ofc_js_splicer[]" value="{{ row.splicer }}" class="form-control form-control-sm border-0 p-0" placeholder="Technician"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section 3: Jointing / Core Splice Schedule (12 Cores) (Page 1) -->
+            <div class="bifpcl-section-header mt-3">Jointing / Core Splice Schedule</div>
+            <div class="bg-light p-2 border border-bottom-0">
+                <div class="row g-2 align-items-center small">
+                    <div class="col-md-3 d-flex align-items-center">
+                        <strong class="me-2 text-nowrap">Joint No.:</strong>
+                        <input type="text" name="ofc_sch_joint_no" value="{{ ofc_data.splice_header.joint_no|default:'J-01' }}" class="form-control form-control-sm border-0 border-bottom rounded-0 bg-transparent font-monospace" placeholder="J-01">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-center">
+                        <strong class="me-2 text-nowrap">Location:</strong>
+                        <input type="text" name="ofc_sch_location" value="{{ ofc_data.splice_header.location }}" class="form-control form-control-sm border-0 border-bottom rounded-0 bg-transparent" placeholder="e.g. Substation Pit #3">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-center">
+                        <strong class="me-2 text-nowrap">Closure ID:</strong>
+                        <input type="text" name="ofc_sch_closure_id" value="{{ ofc_data.splice_header.closure_id }}" class="form-control form-control-sm border-0 border-bottom rounded-0 bg-transparent" placeholder="e.g. FJC-09">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-center">
+                        <strong class="me-2 text-nowrap">Tray No.:</strong>
+                        <input type="text" name="ofc_sch_tray_no" value="{{ ofc_data.splice_header.tray_no|default:'Tray 01' }}" class="form-control form-control-sm border-0 border-bottom rounded-0 bg-transparent" placeholder="e.g. Tray 01">
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="bifpcl-table mb-2" id="ofcSpliceTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 4%; text-align: center;">Sl.</th>
+                            <th style="width: 14%;">Incoming Cable ID</th>
+                            <th style="width: 12%;">Tube No. / Color</th>
+                            <th style="width: 12%;">Core No. / Color</th>
+                            <th style="width: 14%;">Outgoing Cable ID</th>
+                            <th style="width: 12%;">Tube No. / Color</th>
+                            <th style="width: 12%;">Core No. / Color</th>
+                            <th style="width: 10%; text-align: center;">Splice Loss (dB)</th>
+                            <th style="width: 10%;">Remarks / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ofc_data.splice_schedule %}
+                        <tr>
+                            <td class="text-center align-middle">{{ forloop.counter }}</td>
+                            <td><input type="text" name="ofc_sp_in_cable[]" value="{{ row.in_cable }}" class="form-control form-control-sm border-0 p-0" placeholder="Cable ID"></td>
+                            <td><input type="text" name="ofc_sp_in_tube[]" value="{{ row.in_tube }}" class="form-control form-control-sm border-0 p-0" placeholder="Tube / Blue"></td>
+                            <td><input type="text" name="ofc_sp_in_core[]" value="{{ row.in_core }}" class="form-control form-control-sm border-0 p-0" placeholder="Core {{ forloop.counter }}"></td>
+                            <td><input type="text" name="ofc_sp_out_cable[]" value="{{ row.out_cable }}" class="form-control form-control-sm border-0 p-0" placeholder="Cable ID"></td>
+                            <td><input type="text" name="ofc_sp_out_tube[]" value="{{ row.out_tube }}" class="form-control form-control-sm border-0 p-0" placeholder="Tube / Blue"></td>
+                            <td><input type="text" name="ofc_sp_out_core[]" value="{{ row.out_core }}" class="form-control form-control-sm border-0 p-0" placeholder="Core {{ forloop.counter }}"></td>
+                            <td class="text-center"><input type="number" step="0.01" name="ofc_sp_loss[]" value="{{ row.loss }}" class="form-control form-control-sm border-0 p-0 text-center" placeholder="0.02"></td>
+                            <td><input type="text" name="ofc_sp_remarks[]" value="{{ row.remarks }}" class="form-control form-control-sm border-0 p-0" placeholder="OK"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section 4: Testing and Acceptance (5 Rows: 4 for Page 1, 1 for Page 2) -->
+            <div class="bifpcl-section-header mt-3">Testing and Acceptance</div>
+            <div class="table-responsive">
+                <table class="bifpcl-table mb-2" id="ofcTestTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Test</th>
+                            <th style="width: 18%;">End A / Location</th>
+                            <th style="width: 18%;">End B / Location</th>
+                            <th style="width: 16%;">Wavelength</th>
+                            <th style="width: 14%;">Measured Loss / Length</th>
+                            <th style="width: 14%; text-align: center;">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in ofc_data.testing_acceptance %}
+                        <tr>
+                            <td>
+                                <select name="ofc_ta_test[]" class="form-select form-select-sm border-0 p-0">
+                                    <option value="OTDR" {% if row.test == 'OTDR' %}selected{% endif %}>OTDR</option>
+                                    <option value="Power Meter" {% if row.test == 'Power Meter' %}selected{% endif %}>Power Meter</option>
+                                    <option value="VFL" {% if row.test == 'VFL' %}selected{% endif %}>VFL</option>
+                                </select>
+                            </td>
+                            <td><input type="text" name="ofc_ta_end_a[]" value="{{ row.end_a }}" class="form-control form-control-sm border-0 p-0" placeholder="End A Location"></td>
+                            <td><input type="text" name="ofc_ta_end_b[]" value="{{ row.end_b }}" class="form-control form-control-sm border-0 p-0" placeholder="End B Location"></td>
+                            <td><input type="text" name="ofc_ta_wave[]" value="{{ row.wavelength|default:'1310 / 1550 nm' }}" class="form-control form-control-sm border-0 p-0" placeholder="1310 / 1550 nm"></td>
+                            <td><input type="text" name="ofc_ta_loss[]" value="{{ row.loss }}" class="form-control form-control-sm border-0 p-0" placeholder="e.g. 0.35 dB / 1450m"></td>
+                            <td class="text-center">
+                                <select name="ofc_ta_result[]" class="form-select form-select-sm border-0 p-0 text-center fw-bold">
+                                    <option value="Pass" {% if row.result == 'Pass' or not row.result %}selected{% endif %} class="text-success">Pass</option>
+                                    <option value="Fail" {% if row.result == 'Fail' %}selected{% endif %} class="text-danger">Fail</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section 5: Materials and Warranty (Page 2) -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                <div class="bifpcl-section-header mb-0">Materials and Warranty</div>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0 no-print" id="addMaterialRowBtn">
+                    <i class="bi bi-plus-circle me-1"></i>Add Row
+                </button>
+            </div>
+            <table class="bifpcl-table mb-1" id="materialsTable">
+                <thead>
+                    <tr>
+                        <th style="width: 6%; text-align: center;">Sl.</th>
+                        <th style="width: 44%;">Material / Spare Description</th>
+                        <th style="width: 25%;">Material Code / Model</th>
+                        <th style="width: 10%; text-align: center;">Qty</th>
+                        <th style="width: 15%;">Store Issue Ref.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if submission and submission.materials_data %}
+                        {% for mat in submission.materials_data %}
+                        <tr>
+                            <td class="text-center">{{ forloop.counter }}</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.desc }}" placeholder="e.g. 24-Port ODF / Splice Protection Sleeve"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.model }}" placeholder="Model / Code"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.ref }}" placeholder="Store Ref"></td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td class="text-center">1</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Fiber Splice Protection Sleeves 60mm"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="24" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center">2</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Optical Fiber Joint Closure (Dome type)"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-center">3</td>
+                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. SC-LC Duplex Patch Cord 3M SM"></td>
+                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                            <td class="text-center"><input type="number" name="mat_qty[]" value="2" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <table class="bifpcl-table mb-2">
+                <tbody>
+                    <tr>
+                        <td style="width: 100%;">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <strong class="me-2">Warranty / AMC:</strong>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="warranty_status" value="Under Warranty"
+                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
+                                </label>
+                                <label class="form-check-label me-2">
+                                    <input type="radio" name="warranty_status" value="Under AMC"
+                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
+                                </label>
+                                <label class="form-check-label me-3">
+                                    <input type="radio" name="warranty_status" value="Out of Warranty"
+                                        class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
+                                </label>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <span>Vendor / PO Ref.:</span>
+                                    <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
+                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                        style="width: 180px;" placeholder="e.g. PO-2026-IT-109">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Section 6: Remarks (Page 2) -->
+            <div class="bifpcl-section-header mt-3">Remarks</div>
+            <table class="bifpcl-table mb-2">
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>General Remarks:</strong>
+                            <textarea name="ofc_general_remarks" rows="4"
+                                class="form-control form-control-sm border-0 mt-1"
+                                placeholder="Enter route condition, backfilling observations, joint box sealing status, OTDR event notes, or any special recommendations...">{{ ofc_data.general_remarks }}</textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% else %}
+            <!-- Standard Checklists (Forms F/01 to F/11) -->
+            <!-- Section 1: Physical or Diagnostic Checklist -->
+            <div class="bifpcl-section-header">{{ template.physical_heading }}</div>
             <table class="bifpcl-table">
                 <thead>
                     <tr>
@@ -198,7 +511,8 @@
                 </tbody>
             </table>
 
-            <!-- Section 2: Fault Classification and Action Taken -->
+            <!-- Section 2: Fault Classification and Action Taken (Troubleshooting Checklists Only) -->
+            {% if template.fault_options_schema %}
             <div class="bifpcl-section-header">Fault Classification and Action Taken</div>
             <table class="bifpcl-table">
                 <thead>
@@ -216,7 +530,7 @@
                                 class="form-check-input"
                                 {% if submission %}
                                     {% if submission.fault_selected == opt.key %}checked{% endif %}
-                                {% else %}
+                                    {% else %}
                                     {% if forloop.first %}checked{% endif %}
                                 {% endif %}>
                         </td>
@@ -237,6 +551,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {% endif %}
 
             <!-- Section 3: Materials, Warranty and Disposal -->
             {% if template.materials_enabled %}
@@ -300,6 +615,7 @@
 
             <table class="bifpcl-table">
                 <tbody>
+                    {% if template.has_disposal %}
                     <tr>
                         <td style="width: 100%;">
                             <div class="d-flex flex-wrap align-items-center gap-3">
@@ -329,6 +645,7 @@
                             </div>
                         </td>
                     </tr>
+                    {% endif %}
                     <tr>
                         <td style="width: 100%;">
                             <div class="d-flex flex-wrap align-items-center gap-3">
@@ -358,8 +675,8 @@
             </table>
             {% endif %}
 
-            <!-- Section 4: Restoration Verification -->
-            <div class="bifpcl-section-header">Restoration Verification</div>
+            <!-- Section 4: Verification Checklist -->
+            <div class="bifpcl-section-header">{{ template.verification_heading }}</div>
             <table class="bifpcl-table">
                 <tbody>
                     <tr>
@@ -396,18 +713,12 @@
                         <td colspan="2">
                             <div class="d-flex flex-wrap align-items-center gap-3">
                                 <strong class="me-1">Final Status:</strong>
+                                {% for choice in template.final_status_choices %}
                                 <label class="form-check-label me-2">
-                                    <input type="radio" name="final_status" value="Restored and Closed"
-                                        class="form-check-input me-1" {% if not submission or submission.final_status == 'Restored and Closed' %}checked{% endif %}> Restored and Closed
+                                    <input type="radio" name="final_status" value="{{ choice }}"
+                                        class="form-check-input me-1" {% if not submission and forloop.first or submission.final_status == choice %}checked{% endif %}> {{ choice }}
                                 </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="final_status" value="Pending Power Department"
-                                        class="form-check-input me-1" {% if submission.final_status == 'Pending Power Department' %}checked{% endif %}> Pending Power Department
-                                </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="final_status" value="Pending Replacement"
-                                        class="form-check-input me-1" {% if submission.final_status == 'Pending Replacement' %}checked{% endif %}> Pending Replacement
-                                </label>
+                                {% endfor %}
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <label class="form-check-label me-1">
                                         <input type="radio" name="final_status" value="Other"
@@ -430,6 +741,7 @@
                     </tr>
                 </tbody>
             </table>
+            {% endif %}
 
             <!-- Section 5: Official 3-Stage Signature Block -->
             <div class="bifpcl-section-header">Signatures & Approvals</div>
@@ -499,7 +811,7 @@
                 <div><strong>Doc No:</strong> {{ template.doc_no }} &nbsp;&bull;&nbsp; <strong>Rev:</strong> {{ template.revision }}</div>
                 <div><strong>Effective Date:</strong> {{ template.effective_date|date:"d-m-Y" }}</div>
                 <div><strong>Retention:</strong> {{ template.retention_period }}</div>
-                <div><strong>Page:</strong> 1 of 1</div>
+                <div><strong>Page:</strong> {% if template.is_ofc %}1 of 2 &bull; 2 of 2 (Combined Form){% else %}1 of 1{% endif %}</div>
             </div>
 
             <!-- Submit Action Bar -->
@@ -571,6 +883,95 @@
                 <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Code / Model"></td>
                 <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
                 <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+            `;
+        });
+    }
+
+    // OFC Dynamic Rows & Cable Laid Total Calculation
+    function calculateOfcTotals() {
+        const laidInputs = document.querySelectorAll('.cl-laid');
+        const slackInputs = document.querySelectorAll('.cl-slack');
+        let totalLaid = 0;
+        let totalSlack = 0;
+
+        laidInputs.forEach(input => {
+            const val = parseFloat(input.value);
+            if (!isNaN(val)) totalLaid += val;
+        });
+
+        slackInputs.forEach(input => {
+            const val = parseFloat(input.value);
+            if (!isNaN(val)) totalSlack += val;
+        });
+
+        const totalLaidElem = document.getElementById('ofcTotalCableLaid');
+        const totalSlackElem = document.getElementById('ofcTotalSlackReserve');
+        if (totalLaidElem && totalLaid > 0) totalLaidElem.value = totalLaid.toFixed(1);
+        if (totalSlackElem && totalSlack > 0) totalSlackElem.value = totalSlack.toFixed(1);
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('cl-calc') || e.target.classList.contains('cl-laid') || e.target.classList.contains('cl-slack')) {
+            const tr = e.target.closest('tr');
+            if (tr) {
+                const startIn = tr.querySelector('.cl-start');
+                const endIn = tr.querySelector('.cl-end');
+                const laidIn = tr.querySelector('.cl-laid');
+                if (startIn && endIn && laidIn && (e.target === startIn || e.target === endIn)) {
+                    const startVal = parseFloat(startIn.value);
+                    const endVal = parseFloat(endIn.value);
+                    if (!isNaN(startVal) && !isNaN(endVal) && endVal >= startVal) {
+                        laidIn.value = (endVal - startVal).toFixed(1);
+                    }
+                }
+            }
+            calculateOfcTotals();
+        }
+    });
+
+    const addOfcCableRowBtn = document.getElementById('addOfcCableRowBtn');
+    if (addOfcCableRowBtn) {
+        addOfcCableRowBtn.addEventListener('click', function() {
+            const tbody = document.getElementById('ofcCableTbody');
+            const rowCount = tbody.rows.length + 1;
+            const newRow = tbody.insertRow();
+            newRow.innerHTML = `
+                <td class="text-center align-middle sl-cell">${rowCount}</td>
+                <td><input type="text" name="ofc_cl_drum[]" class="form-control form-control-sm border-0 p-0" placeholder="Drum / Cable ID"></td>
+                <td><input type="text" name="ofc_cl_from[]" class="form-control form-control-sm border-0 p-0" placeholder="From Marker"></td>
+                <td><input type="text" name="ofc_cl_to[]" class="form-control form-control-sm border-0 p-0" placeholder="To Marker"></td>
+                <td>
+                    <select name="ofc_cl_path[]" class="form-select form-select-sm border-0 p-0">
+                        <option value="Duct">Duct</option>
+                        <option value="Tray">Tray</option>
+                        <option value="Aerial">Aerial</option>
+                        <option value="Buried">Buried</option>
+                    </select>
+                </td>
+                <td><input type="number" step="any" name="ofc_cl_start[]" class="form-control form-control-sm border-0 p-0 text-center cl-calc cl-start" placeholder="0"></td>
+                <td><input type="number" step="any" name="ofc_cl_end[]" class="form-control form-control-sm border-0 p-0 text-center cl-calc cl-end" placeholder="0"></td>
+                <td><input type="number" step="any" name="ofc_cl_laid[]" class="form-control form-control-sm border-0 p-0 text-center cl-laid" placeholder="0"></td>
+                <td><input type="number" step="any" name="ofc_cl_slack[]" class="form-control form-control-sm border-0 p-0 text-center cl-slack" placeholder="0"></td>
+                <td><input type="text" name="ofc_cl_remarks[]" class="form-control form-control-sm border-0 p-0" placeholder="Remarks"></td>
+            `;
+        });
+    }
+
+    const addOfcJointRowBtn = document.getElementById('addOfcJointRowBtn');
+    if (addOfcJointRowBtn) {
+        addOfcJointRowBtn.addEventListener('click', function() {
+            const tbody = document.getElementById('ofcJointTbody');
+            const rowCount = tbody.rows.length + 1;
+            const newRow = tbody.insertRow();
+            newRow.innerHTML = `
+                <td><input type="text" name="ofc_js_no[]" value="J-0${rowCount}" class="form-control form-control-sm border-0 p-0 font-monospace"></td>
+                <td><input type="text" name="ofc_js_loc[]" class="form-control form-control-sm border-0 p-0" placeholder="Location / MH"></td>
+                <td><input type="text" name="ofc_js_box[]" class="form-control form-control-sm border-0 p-0" placeholder="Box ID"></td>
+                <td><input type="text" name="ofc_js_in[]" class="form-control form-control-sm border-0 p-0" placeholder="From / Cable ID"></td>
+                <td><input type="text" name="ofc_js_out[]" class="form-control form-control-sm border-0 p-0" placeholder="To / Cable ID"></td>
+                <td class="text-center"><input type="number" name="ofc_js_cores[]" value="12" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                <td><input type="date" name="ofc_js_date[]" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                <td><input type="text" name="ofc_js_splicer[]" class="form-control form-control-sm border-0 p-0" placeholder="Technician"></td>
             `;
         });
     }

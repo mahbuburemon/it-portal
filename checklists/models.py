@@ -61,6 +61,110 @@ class ChecklistTemplate(models.Model):
         verbose_name = 'Checklist Template'
         verbose_name_plural = 'Checklist Templates'
 
+    @property
+    def has_outage_tracking(self):
+        return bool(self.fault_options_schema)
+
+    @property
+    def is_installation(self):
+        return 'installation' in self.title.lower()
+
+    @property
+    def is_replacement(self):
+        return 'replacement' in self.title.lower()
+
+    @property
+    def is_ofc(self):
+        title_l = self.title.lower()
+        return 'optical fiber' in title_l or 'ofc' in self.doc_no.lower() or 'ofc' in title_l
+
+    @property
+    def has_disposal(self):
+        if self.is_ofc:
+            return False
+        return not self.is_installation
+
+    @property
+    def job_id_label(self):
+        if self.has_outage_tracking:
+            return "Work Request No."
+        return "Job ID"
+
+    @property
+    def date_label(self):
+        if self.is_ofc:
+            return "Record Date"
+        if self.is_installation:
+            return "Installation Date"
+        return "Report Date" if self.has_outage_tracking else "Date"
+
+    @property
+    def default_job_id(self):
+        title_l = self.title.lower()
+        if 'cctv' in title_l and self.is_installation:
+            return "BIFPCL/IT/CCTV/INS/2026/"
+        elif 'cctv' in title_l and self.is_replacement:
+            return "BIFPCL/IT/CCTV/REP/2026/"
+        elif 'ap' in title_l and self.is_installation:
+            return "BIFPCL/IT/AP/INS/2026/"
+        elif 'ap' in title_l and self.is_replacement:
+            return "BIFPCL/IT/AP/REP/2026/"
+        elif 'telephone' in title_l and self.is_installation:
+            return "BIFPCL/IT/TEL/INS/2026/"
+        elif 'telephone' in title_l and self.is_replacement:
+            return "BIFPCL/IT/TEL/REP/2026/"
+        elif 'ofc' in title_l or 'optical fiber' in title_l:
+            return "BIFPCL/IT/OFC/2026/"
+        return ""
+
+    @property
+    def physical_heading(self):
+        if self.is_installation or self.is_replacement:
+            return "Physical Installation Checklist"
+        return "Inspection and Diagnostic Checklist"
+
+    @property
+    def verification_heading(self):
+        if self.is_replacement:
+            return "Post Replacement Verification"
+        elif self.is_installation:
+            return "Post Installation Verification"
+        return "Restoration Verification"
+
+    @property
+    def outage_reported_label(self):
+        title_l = self.title.lower()
+        if 'printer' in title_l or 'desktop' in title_l or 'laptop' in title_l:
+            return "Fault Reported At"
+        return "Outage Reported At"
+
+    @property
+    def site_arrival_label(self):
+        title_l = self.title.lower()
+        if 'printer' in title_l or 'desktop' in title_l or 'laptop' in title_l:
+            return "Attended At"
+        return "Site Arrival At"
+
+    @property
+    def final_status_choices(self):
+        title_l = self.title.lower()
+        if 'printer' in title_l:
+            return ['Restored and Closed', 'Pending Consumable', 'Pending Spare Parts', 'Pending Vendor Support']
+        elif 'desktop' in title_l or 'laptop' in title_l:
+            return ['Restored and Closed', 'Pending Spare Parts', 'Pending Replacement', 'Warranty Claim']
+        elif 'telephone' in title_l:
+            if self.is_installation:
+                return ['Commissioned & Closed', 'Pending EPABX Configuration', 'Pending Cable Work']
+            elif self.is_replacement:
+                return ['Restored and Closed', 'Pending EPABX Configuration', 'Pending Replacement']
+            else:  # Troubleshooting
+                return ['Restored and Closed', 'Pending EPABX Vendor', 'Pending Replacement']
+        elif self.is_installation and 'cctv' in title_l:
+            return ['Commissioned & Closed', 'Pending VMS Configuration', 'Pending Power Department']
+        elif self.is_installation:
+            return ['Commissioned & Closed', 'Pending Power Department', 'Pending Replacement']
+        return ['Restored and Closed', 'Pending Power Department', 'Pending Replacement']
+
     def __str__(self):
         return f"{self.doc_no} - {self.title}"
 
@@ -96,6 +200,7 @@ class ChecklistSubmission(models.Model):
     # Dynamic Section Data
     equipment_data = models.JSONField(default=dict, blank=True)
     diagnostics_data = models.JSONField(default=dict, blank=True)
+    custom_data = models.JSONField(default=dict, blank=True)
     fault_selected = models.CharField(max_length=100, blank=True)
     action_taken_details = models.TextField(blank=True)
     materials_data = models.JSONField(default=list, blank=True)
@@ -164,6 +269,34 @@ class ChecklistSubmission(models.Model):
         if self.approved_by:
             return self.approved_by.get_full_name() or self.approved_by.username
         return ""
+
+    @property
+    def formatted_equipment_fields(self):
+        """
+        Returns list of dicts ordered according to template.equipment_fields_schema:
+        {key, label, value, options, is_options}
+        """
+        results = []
+        schema = self.template.equipment_fields_schema or []
+        for field in schema:
+            key = field.get('key')
+            label = field.get('label', key)
+            options = field.get('options', [])
+            val = ''
+            if isinstance(self.equipment_data, dict) and key in self.equipment_data:
+                eq_item = self.equipment_data[key]
+                if isinstance(eq_item, dict):
+                    val = eq_item.get('value', '')
+                else:
+                    val = str(eq_item)
+            results.append({
+                'key': key,
+                'label': label,
+                'value': val,
+                'options': options,
+                'is_options': bool(options)
+            })
+        return results
 
     def save(self, *args, **kwargs):
         if not self.tracking_no:

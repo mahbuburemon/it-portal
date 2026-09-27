@@ -306,5 +306,624 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertEqual(sub.manager_remarks, '')
         self.assertEqual(sub.approved_by, self.manager)
 
+    def test_form_02_new_cctv_installation_workflow(self):
+        """Test Form 02 (New CCTV Installation Report & Checklist) lifecycle."""
+        t2 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/02',
+            title='New CCTV Installation Report & Checklist',
+            category='Surveillance & Physical Security',
+            revision='Rev: 00',
+            equipment_fields_schema=[
+                {'key': 'camera_id_1', 'label': 'Camera ID / Name 1', 'required': True},
+                {'key': 'location_1', 'label': 'Location', 'required': True},
+                {'key': 'camera_model', 'label': 'Camera Model', 'required': True},
+                {'key': 'serial_no', 'label': 'Serial No.', 'required': True},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Proper alignment'},
+                {'id': 2, 'text': 'Proper focus'},
+            ],
+            fault_options_schema=[],
+            verification_items_schema=[
+                'Both VMS servers configured, if applicable',
+                'Camera online and live view stable',
+            ]
+        )
 
+        # 1. Load form
+        resp = self.client.get(reverse('checklist_form', args=[t2.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Job ID')
+        self.assertContains(resp, 'Installation Date')
+        self.assertContains(resp, 'Physical Installation Checklist')
+        self.assertContains(resp, 'Post Installation Verification')
+
+        # 2. Submit form
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'BIFPCL/IT/CCTV/INS/2026/001',
+            'report_date': '2026-09-27',
+            'eq_camera_id_1': 'CAM-GATE-02',
+            'eq_location_1': 'Main Sentry Gate North',
+            'eq_camera_model': 'Hikvision DS-2CD2T87G2-L',
+            'eq_serial_no': 'SN-8923478912',
+            'diag_status_1': 'Yes',
+            'diag_remarks_1': 'Aligned to main gate',
+            'diag_status_2': 'Yes',
+            'diag_remarks_2': 'Clear image',
+            'mat_desc[]': ['Cat6 Cable'],
+            'mat_model[]': ['Cat6 UTP'],
+            'mat_qty[]': ['40m'],
+            'mat_ref[]': ['SIR-102'],
+            'warranty_status': 'Under Warranty',
+            'vendor_po_ref': 'PO-88',
+            'verification_checks': ['Both VMS servers configured, if applicable', 'Camera online and live view stable'],
+            'final_status': 'Commissioned & Closed',
+        }
+        submit_resp = self.client.post(reverse('checklist_form', args=[t2.id]), data=post_data)
+        self.assertEqual(submit_resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='BIFPCL/IT/CCTV/INS/2026/001')
+        self.assertEqual(sub.status, 'SUBMITTED')
+        self.assertEqual(sub.template, t2)
+
+        # 3. Print view
+        print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, 'Job ID')
+        self.assertContains(print_resp, 'Physical Installation Checklist')
+        self.assertContains(print_resp, 'Commissioned &amp; Closed')
+
+    def test_form_03_cctv_replacement_workflow(self):
+        """Test CCTV Replacement Checklist (F/03) with disposal and dynamic labels."""
+        t3 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/03',
+            title='CCTV Replacement Report & Checklist',
+            category='Surveillance',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'camera_id_1', 'label': 'Camera ID / Name 1', 'required': True},
+                {'key': 'damaged_camera_model', 'label': 'Damaged Camera Model', 'required': True},
+                {'key': 'replacing_camera_model', 'label': 'Replacing Camera Model', 'required': True},
+                {'key': 'height_work_ppe', 'label': 'Height Work / PPE', 'options': ['Height work', 'PPE used', 'Not applicable']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Proper alignment'},
+            ],
+            fault_options_schema=[],
+            verification_items_schema=['Camera online and live view stable'],
+        )
+        self.assertEqual(t3.job_id_label, 'Job ID')
+        self.assertEqual(t3.date_label, 'Date')
+        self.assertEqual(t3.physical_heading, 'Physical Installation Checklist')
+        self.assertEqual(t3.verification_heading, 'Post Replacement Verification')
+        self.assertTrue(t3.has_disposal)
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'BIFPCL/IT/CCTV/REP/2026/012',
+            'report_date': '2026-09-27',
+            'eq_camera_id_1': 'CAM-GATE-01',
+            'eq_damaged_camera_model': 'DS-2CD2T47G1-L',
+            'eq_replacing_camera_model': 'DS-2CD2T87G2-L',
+            'eq_height_work_ppe': 'PPE used',
+            'diag_status_1': 'Yes',
+            'faulty_item_disposal': 'Store Return',
+            'disposal_ref_no': 'SRN-552',
+            'warranty_status': 'Under AMC',
+            'vendor_po_ref': 'PO-991',
+            'verification_checks': ['Camera online and live view stable'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t3.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='BIFPCL/IT/CCTV/REP/2026/012')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+        print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, 'Post Replacement Verification')
+        self.assertContains(print_resp, 'Faulty Item Disposal')
+        self.assertContains(print_resp, 'Store Return')
+
+    def test_form_04_ap_troubleshooting_workflow(self):
+        """Test AP Troubleshooting Checklist (F/04) with outage tracking and fault classification."""
+        t4 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/04',
+            title='AP Troubleshooting Report & Checklist',
+            category='Network',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'ap_id_name', 'label': 'AP ID / Name', 'required': True},
+                {'key': 'location', 'label': 'Location', 'required': True},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Correct AP ID and location confirmed'},
+            ],
+            fault_options_schema=[
+                {'key': 'minor_issue', 'label': '1. Minor issue corrected', 'desc': 'Loose cable'},
+            ],
+            verification_items_schema=['AP online in controller'],
+        )
+        self.assertEqual(t4.job_id_label, 'Work Request No.')
+        self.assertEqual(t4.date_label, 'Report Date')
+        self.assertTrue(t4.has_outage_tracking)
+        self.assertEqual(t4.verification_heading, 'Restoration Verification')
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-AP-2026-004',
+            'report_date': '2026-09-27',
+            'eq_ap_id_name': 'AP-ADMIN-01',
+            'eq_location': 'Admin 2nd Floor',
+            'outage_reported_at': '2026-09-27T08:00',
+            'site_arrival_at': '2026-09-27T08:15',
+            'restored_at': '2026-09-27T09:00',
+            'total_downtime': '1h 00m',
+            'reported_by': 'Admin Officer',
+            'contact_no': '2100',
+            'diag_status_1': 'Yes',
+            'fault_selected': 'minor_issue',
+            'action_taken_details': 'PoE cable reseated on patch panel',
+            'faulty_item_disposal': 'N/A',
+            'warranty_status': 'Under Warranty',
+            'verification_checks': ['AP online in controller'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t4.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='WR-AP-2026-004')
+        self.assertEqual(sub.status, 'SUBMITTED')
+        self.assertEqual(sub.total_downtime, '1h 00m')
+
+    def test_form_05_new_ap_installation_workflow(self):
+        """Test New AP Installation Checklist (F/05) with dynamic option fields."""
+        t5 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/05',
+            title='New AP Installation Report & Checklist',
+            category='Network',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'ap_id_name', 'label': 'AP ID / Name', 'required': True},
+                {'key': 'mounting_type', 'label': 'Mounting Type', 'options': ['Ceiling', 'Wall', 'Pole', 'Other']},
+                {'key': 'power_source', 'label': 'Power Source', 'options': ['PoE Switch', 'Injector', 'Adapter']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'AP mounted securely with correct orientation'},
+            ],
+            fault_options_schema=[],
+            verification_items_schema=['AP online in controller', 'SSID broadcast and authentication verified'],
+        )
+        self.assertEqual(t5.job_id_label, 'Job ID')
+        self.assertEqual(t5.date_label, 'Installation Date')
+        self.assertEqual(t5.physical_heading, 'Physical Installation Checklist')
+        self.assertEqual(t5.verification_heading, 'Post Installation Verification')
+        self.assertFalse(t5.has_disposal)
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'BIFPCL/IT/AP/INS/2026/001',
+            'report_date': '2026-09-27',
+            'eq_ap_id_name': 'AP-PLANT-04',
+            'eq_mounting_type': 'Ceiling',
+            'eq_power_source': 'PoE Switch',
+            'diag_status_1': 'Yes',
+            'mat_desc[]': ['Patch cord 2m'],
+            'mat_model[]': ['Cat6 UTP'],
+            'mat_qty[]': ['1'],
+            'mat_ref[]': ['SR-88'],
+            'warranty_status': 'Under Warranty',
+            'vendor_po_ref': 'PO-CISC-2026',
+            'verification_checks': ['AP online in controller', 'SSID broadcast and authentication verified'],
+            'final_status': 'Commissioned & Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t5.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='BIFPCL/IT/AP/INS/2026/001')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+        # Verify formatted equipment fields
+        fields = sub.formatted_equipment_fields
+        self.assertEqual(len(fields), 3)
+        self.assertEqual(fields[1]['value'], 'Ceiling')
+        self.assertEqual(fields[2]['value'], 'PoE Switch')
+
+    def test_form_06_ap_replacement_workflow(self):
+        """Test AP Replacement Checklist (F/06)"""
+        t6 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/06',
+            title='AP Replacement Report & Checklist',
+            category='Network',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'ap_id_name', 'label': 'AP ID / Name', 'required': True},
+                {'key': 'damaged_ap_model', 'label': 'Damaged AP Model', 'required': True},
+                {'key': 'replacing_ap_model', 'label': 'Replacing AP Model', 'required': True},
+                {'key': 'height_work_ppe', 'label': 'Height Work / PPE', 'options': ['Height work', 'PPE used', 'Not applicable']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Proper AP mounting'},
+            ],
+            fault_options_schema=[],
+            verification_items_schema=['WiFi signal OK', 'WiFi speed OK'],
+        )
+        self.assertEqual(t6.job_id_label, 'Job ID')
+        self.assertEqual(t6.date_label, 'Date')
+        self.assertEqual(t6.default_job_id, 'BIFPCL/IT/AP/REP/2026/')
+        self.assertTrue(t6.has_disposal)
+        self.assertEqual(t6.verification_heading, 'Post Replacement Verification')
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'BIFPCL/IT/AP/REP/2026/005',
+            'report_date': '2026-09-27',
+            'eq_ap_id_name': 'AP-ADMIN-02',
+            'eq_damaged_ap_model': 'Cisco 2802I',
+            'eq_replacing_ap_model': 'Cisco 9120AXI',
+            'eq_height_work_ppe': 'Height work',
+            'diag_status_1': 'Yes',
+            'faulty_item_disposal': 'Store Return',
+            'disposal_ref_no': 'SR-412',
+            'warranty_status': 'Under Warranty',
+            'verification_checks': ['WiFi signal OK', 'WiFi speed OK'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t6.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='BIFPCL/IT/AP/REP/2026/005')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+        print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, 'Post Replacement Verification')
+
+    def test_form_07_telephone_troubleshooting_workflow(self):
+        """Test Telephone Troubleshooting Checklist (F/07)"""
+        t7 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/07',
+            title='Telephone Troubleshooting Report & Checklist',
+            category='Telecommunications & EPABX',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'extension_no', 'label': 'Extension No.', 'required': True},
+                {'key': 'phone_type', 'label': 'Phone Type', 'options': ['Analog', 'IP', 'DECT', 'Hotline']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Correct extension number and location confirmed'},
+            ],
+            fault_options_schema=[
+                {'key': 'minor_issue', 'label': '1. Minor issue corrected', 'desc': 'Loose cord'},
+            ],
+            verification_items_schema=['Dial tone available', 'Outgoing call tested'],
+        )
+        self.assertEqual(t7.job_id_label, 'Work Request No.')
+        self.assertEqual(t7.date_label, 'Report Date')
+        self.assertTrue(t7.has_outage_tracking)
+        self.assertIn('Pending EPABX Vendor', t7.final_status_choices)
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-TEL-2026-001',
+            'report_date': '2026-09-27',
+            'eq_extension_no': '2104',
+            'eq_phone_type': 'Analog',
+            'diag_status_1': 'Yes',
+            'fault_selected': 'minor_issue',
+            'action_taken_details': 'Line cord replaced',
+            'warranty_status': 'Out of Warranty',
+            'verification_checks': ['Dial tone available'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t7.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='WR-TEL-2026-001')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+    def test_form_08_and_09_telephone_installation_and_replacement(self):
+        """Test Telephone Installation (F/08) and Replacement (F/09)"""
+        t8 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/08',
+            title='New Telephone Installation Report & Checklist',
+            category='Telecommunications & EPABX',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'extension_no', 'label': 'Extension No.', 'required': True},
+            ],
+            diagnostic_items_schema=[{'id': 1, 'text': 'Cable laid properly'}],
+            fault_options_schema=[],
+            verification_items_schema=['Dial tone available'],
+        )
+        self.assertEqual(t8.default_job_id, 'BIFPCL/IT/TEL/INS/2026/')
+        self.assertFalse(t8.has_disposal)
+        self.assertIn('Pending Cable Work', t8.final_status_choices)
+
+        t9 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/09',
+            title='Telephone Replacement Report & Checklist',
+            category='Telecommunications & EPABX',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'extension_no', 'label': 'Extension No.', 'required': True},
+            ],
+            diagnostic_items_schema=[{'id': 1, 'text': 'Damaged instrument removed'}],
+            fault_options_schema=[],
+            verification_items_schema=['Dial tone available'],
+        )
+        self.assertEqual(t9.default_job_id, 'BIFPCL/IT/TEL/REP/2026/')
+        self.assertTrue(t9.has_disposal)
+        self.assertIn('Pending EPABX Configuration', t9.final_status_choices)
+
+    def test_form_10_desktop_laptop_troubleshooting_workflow(self):
+        """Test Desktop / Laptop Troubleshooting Checklist (F/10)"""
+        t10 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/10',
+            title='Desktop / Laptop Troubleshooting Report & Checklist',
+            category='End-User Computing & Workstations',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'asset_tag_no', 'label': 'Asset / Tag No.', 'required': True},
+                {'key': 'equipment_type', 'label': 'Equipment Type', 'options': ['Desktop', 'Laptop', 'AIO', 'Other']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Fault reported by user confirmed and reproduced'},
+            ],
+            fault_options_schema=[
+                {'key': 'minor_issue', 'label': '1. Minor issue corrected', 'desc': 'Loose cable'},
+            ],
+            verification_items_schema=['System boots and runs normally'],
+        )
+        self.assertEqual(t10.job_id_label, 'Work Request No.')
+        self.assertEqual(t10.date_label, 'Report Date')
+        self.assertEqual(t10.outage_reported_label, 'Fault Reported At')
+        self.assertEqual(t10.site_arrival_label, 'Attended At')
+        self.assertTrue(t10.has_outage_tracking)
+        self.assertIn('Warranty Claim', t10.final_status_choices)
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-DSK-2026-001',
+            'report_date': '2026-09-27',
+            'eq_asset_tag_no': 'IT-DSK-042',
+            'eq_equipment_type': 'Desktop',
+            'outage_reported_at': '2026-09-27T09:00',
+            'site_arrival_at': '2026-09-27T09:15',
+            'restored_at': '2026-09-27T10:00',
+            'total_downtime': '1h 00m',
+            'reported_by': 'Finance Exec',
+            'contact_no': '2105',
+            'diag_status_1': 'Yes',
+            'fault_selected': 'minor_issue',
+            'action_taken_details': 'RAM cleaned and reseated',
+            'faulty_item_disposal': 'N/A',
+            'warranty_status': 'Under AMC',
+            'verification_checks': ['System boots and runs normally'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t10.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='WR-DSK-2026-001')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+        print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, 'Fault Reported At')
+        self.assertContains(print_resp, 'Attended At')
+
+    def test_form_11_printer_troubleshooting_workflow(self):
+        """Test Printer Troubleshooting Checklist (F/11)"""
+        t11 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/11',
+            title='Printer Troubleshooting Report & Checklist',
+            category='Printing & Peripheral Devices',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'printer_id_tag', 'label': 'Printer ID / Tag No.', 'required': True},
+                {'key': 'connection_type', 'label': 'Connection Type', 'options': ['USB', 'LAN', 'WiFi', 'Shared']},
+            ],
+            diagnostic_items_schema=[
+                {'id': 1, 'text': 'Correct printer ID, location, and reported fault confirmed'},
+            ],
+            fault_options_schema=[
+                {'key': 'consumable_issue', 'label': '2. Consumable issue', 'desc': 'Toner refilled'},
+            ],
+            verification_items_schema=['Test page printed successfully'],
+        )
+        self.assertEqual(t11.outage_reported_label, 'Fault Reported At')
+        self.assertEqual(t11.site_arrival_label, 'Attended At')
+        self.assertIn('Pending Consumable', t11.final_status_choices)
+
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-PRN-2026-001',
+            'report_date': '2026-09-27',
+            'eq_printer_id_tag': 'PRN-ADM-02',
+            'eq_connection_type': 'LAN',
+            'diag_status_1': 'Yes',
+            'fault_selected': 'consumable_issue',
+            'action_taken_details': 'New black toner cartridge installed',
+            'mat_desc[]': ['HP 58A Black Toner'],
+            'mat_model[]': ['CF258A'],
+            'mat_qty[]': ['1'],
+            'mat_ref[]': ['STR-884'],
+            'faulty_item_disposal': 'Store Return',
+            'disposal_ref_no': 'RET-019',
+            'warranty_status': 'Out of Warranty',
+            'verification_checks': ['Test page printed successfully'],
+            'final_status': 'Restored and Closed',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t11.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='WR-PRN-2026-001')
+        self.assertEqual(sub.status, 'SUBMITTED')
+
+    def test_form_12_optical_fiber_cable_laying_and_jointing_workflow(self):
+        """Test Form 12: Optical Fiber Cable Laying & Jointing Record (2-page physical form unified)"""
+        t12 = ChecklistTemplate.objects.create(
+            doc_no='BIFPCL/IT/F/12',
+            title='Optical Fiber Cable Laying & Jointing Record',
+            category='Fiber Optic & Transmission Infrastructure',
+            revision='Rev: 00',
+            retention_period='3 Years',
+            equipment_fields_schema=[
+                {'key': 'route_link_name', 'label': 'Route / Link Name', 'required': True},
+                {'key': 'total_route_length', 'label': 'Total Route Length (m)', 'required': True},
+                {'key': 'cable_type_core_count', 'label': 'Cable Type / Core Count', 'required': True},
+                {'key': 'drum_batch_no', 'label': 'Drum / Batch No.', 'required': True},
+                {'key': 'work_permit_no', 'label': 'Work Permit No.', 'required': False},
+                {'key': 'height_work_ppe', 'label': 'Height Work / PPE', 'options': ['Height work', 'PPE used', 'Not applicable'], 'required': False},
+            ],
+            diagnostic_items_schema=[],
+            fault_options_schema=[],
+            materials_enabled=True,
+            verification_items_schema=[],
+        )
+        self.assertTrue(t12.is_ofc)
+        self.assertEqual(t12.default_job_id, 'BIFPCL/IT/OFC/2026/')
+        self.assertEqual(t12.date_label, 'Record Date')
+        self.assertFalse(t12.has_disposal)
+
+        # 1. Technician visits form page
+        form_get = self.client.get(reverse('checklist_form', args=[t12.id]))
+        self.assertEqual(form_get.status_code, 200)
+        self.assertContains(form_get, 'Cable Laying Details')
+        self.assertContains(form_get, 'Joint Location Summary')
+        self.assertContains(form_get, 'Jointing / Core Splice Schedule')
+        self.assertContains(form_get, 'Testing and Acceptance')
+
+        # 2. Technician submits OFC record (combining Page 1 and Page 2)
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'BIFPCL/IT/OFC/2026/014',
+            'report_date': '2026-09-27',
+            'eq_route_link_name': 'Switchyard Substation to Main Control Room',
+            'eq_total_route_length': '1450',
+            'eq_cable_type_core_count': '24-Core Armored Single Mode (G.652D)',
+            'eq_drum_batch_no': 'DRUM-2026-OF-09',
+            'eq_work_permit_no': 'WP/2026/0942',
+            'eq_height_work_ppe': 'PPE used',
+
+            # Cable Laying Details (Page 1)
+            'ofc_cl_drum[]': ['DRUM-09', 'DRUM-09'],
+            'ofc_cl_from[]': ['SWYD Pit 1', 'MH-03'],
+            'ofc_cl_to[]': ['MH-03', 'MCR Trench'],
+            'ofc_cl_path[]': ['Buried', 'Tray'],
+            'ofc_cl_start[]': ['0', '750'],
+            'ofc_cl_end[]': ['750', '1450'],
+            'ofc_cl_laid[]': ['750', '700'],
+            'ofc_cl_slack[]': ['15', '20'],
+            'ofc_cl_remarks[]': ['HDPE Pipe laid', 'Tray clamped'],
+            'ofc_total_cable_laid': '1450',
+            'ofc_total_slack_reserve': '35',
+
+            # Joint Location Summary (Page 1)
+            'ofc_js_no[]': ['J-01'],
+            'ofc_js_loc[]': ['MH-03 Switchyard Road'],
+            'ofc_js_box[]': ['FJC-09'],
+            'ofc_js_in[]': ['DRUM-09 / Pit 1'],
+            'ofc_js_out[]': ['DRUM-09 / MCR'],
+            'ofc_js_cores[]': ['24'],
+            'ofc_js_date[]': ['2026-09-27'],
+            'ofc_js_splicer[]': ['IT Fiber Team'],
+
+            # Splice Schedule Header & 12 Cores (Page 1)
+            'ofc_sch_joint_no': 'J-01',
+            'ofc_sch_location': 'MH-03 Switchyard Road',
+            'ofc_sch_closure_id': 'FJC-09',
+            'ofc_sch_tray_no': 'Tray 01',
+            'ofc_sp_in_cable[]': [f'C1-F{i+1}' for i in range(12)],
+            'ofc_sp_in_tube[]': ['Blue'] * 12,
+            'ofc_sp_in_core[]': [f'Core {i+1}' for i in range(12)],
+            'ofc_sp_out_cable[]': [f'C2-F{i+1}' for i in range(12)],
+            'ofc_sp_out_tube[]': ['Blue'] * 12,
+            'ofc_sp_out_core[]': [f'Core {i+1}' for i in range(12)],
+            'ofc_sp_loss[]': ['0.02'] * 12,
+            'ofc_sp_remarks[]': ['Passed'] * 12,
+
+            # Testing and Acceptance (5 rows: 4 on Page 1, 1 on Page 2)
+            'ofc_ta_test[]': ['OTDR', 'OTDR', 'Power Meter', 'VFL', 'OTDR'],
+            'ofc_ta_end_a[]': ['SWYD Substation', 'SWYD Substation', 'SWYD Substation', 'SWYD Substation', 'MCR'],
+            'ofc_ta_end_b[]': ['MCR Rack 01', 'MCR Rack 01', 'MCR Rack 01', 'MCR Rack 01', 'SWYD Substation'],
+            'ofc_ta_wave[]': ['1310 nm', '1550 nm', '1310 nm', '650 nm', '1550 nm'],
+            'ofc_ta_loss[]': ['0.32 dB/km', '0.21 dB/km', '-18.4 dBm', 'Continuous Red', '0.22 dB/km'],
+            'ofc_ta_result[]': ['Pass', 'Pass', 'Pass', 'Pass', 'Pass'],
+
+            # Materials and Warranty (Page 2)
+            'mat_desc[]': ['24-Core Dome Joint Closure', 'Fiber Splice Protection Sleeves 60mm', 'SC-LC Duplex Patch Cord 3M SM'],
+            'mat_model[]': ['FJC-24P-DOME', 'SPS-60', 'SC-LC-SM-3M'],
+            'mat_qty[]': ['1', '24', '2'],
+            'mat_ref[]': ['SR-OFC-8821', 'SR-OFC-8821', 'SR-OFC-8822'],
+            'warranty_status': 'Under Warranty',
+            'vendor_po_ref': 'PO-2026-FIBER-01',
+
+            # Remarks (Page 2)
+            'ofc_general_remarks': 'Route fully backfilled with warning tape 300mm above duct. All 24 splices sealed inside IP68 closure.',
+        }
+        resp = self.client.post(reverse('checklist_form', args=[t12.id]), data=post_data)
+        self.assertEqual(resp.status_code, 302)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='BIFPCL/IT/OFC/2026/014')
+        self.assertEqual(sub.status, 'SUBMITTED')
+        self.assertEqual(sub.custom_data['total_cable_laid'], '1450')
+        self.assertEqual(len(sub.custom_data['cable_laying']), 2)
+        self.assertEqual(sub.custom_data['splice_header']['closure_id'], 'FJC-09')
+        self.assertEqual(len(sub.custom_data['splice_schedule']), 12)
+        self.assertEqual(len(sub.custom_data['testing_acceptance']), 5)
+        self.assertIn('IP68 closure', sub.custom_data['general_remarks'])
+
+        # 3. Test Detail View
+        detail_resp = self.client.get(reverse('checklist_detail', args=[sub.id]))
+        self.assertEqual(detail_resp.status_code, 200)
+        self.assertContains(detail_resp, 'Cable Laying Details')
+        self.assertContains(detail_resp, 'DRUM-09')
+        self.assertContains(detail_resp, 'FJC-09')
+        self.assertContains(detail_resp, '1450')
+
+        # 4. Test 2-Page Print View
+        print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
+        self.assertEqual(print_resp.status_code, 200)
+        self.assertContains(print_resp, 'Page</strong> 1 of 2')
+        self.assertContains(print_resp, 'Page</strong> 2 of 2')
+        self.assertContains(print_resp, 'Optical Fiber Cable Laying &amp; Jointing Record')
+        self.assertContains(print_resp, 'Cable Laying Details')
+        self.assertContains(print_resp, 'Joint Location Summary')
+        self.assertContains(print_resp, 'Jointing / Core Splice Schedule')
+        self.assertContains(print_resp, 'Testing and Acceptance (Continuation)')
+        self.assertContains(print_resp, 'Materials and Warranty')
+
+        # 5. Supervisor Review & Forward
+        self.client.login(username='sup1', password='Password123!')
+        rev_resp = self.client.post(reverse('supervisor_review', args=[sub.id]), data={
+            'action': 'forward',
+            'supervisor_remarks': 'OFC OTDR traces verified within standard limits.'
+        })
+        self.assertEqual(rev_resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'FORWARDED')
+
+        # 6. Manager Final Approval
+        self.client.login(username='mgr1', password='Password123!')
+        app_resp = self.client.post(reverse('manager_approve', args=[sub.id]), data={
+            'action': 'approve',
+            'manager_remarks': 'Approved for commissioning and link activation.'
+        })
+        self.assertEqual(app_resp.status_code, 302)
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, 'APPROVED')
+        self.assertIsNotNone(sub.approved_at)
 
