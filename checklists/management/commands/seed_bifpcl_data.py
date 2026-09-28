@@ -28,11 +28,11 @@ class Command(BaseCommand):
             admin.save()
             self.stdout.write(self.style.SUCCESS("Created admin superuser (Admin@2026!)"))
 
-        # 2. Create 3 Supervisors
+        # 2. Create 3 Supervisors: Sabbir, Swarup, Ramjan
         supervisors_data = [
-            ('supervisor1', 'Md. Rafiqul', 'Islam', 'rafiqul.supervisor@bifpcl.com'),
-            ('supervisor2', 'Tanvir', 'Ahmed', 'tanvir.supervisor@bifpcl.com'),
-            ('supervisor3', 'Suman', 'Chakraborty', 'suman.supervisor@bifpcl.com'),
+            ('supervisor1', 'Sabbir', 'Ahmen', 'sabbir.supervisor@bifpcl.com'),
+            ('supervisor2', 'Swarup', 'Mohon', 'swarup.supervisor@bifpcl.com'),
+            ('supervisor3', 'Ramjan', 'Ali', 'ramjan.supervisor@bifpcl.com'),
         ]
         for uname, fname, lname, email in supervisors_data:
             u, created = User.objects.get_or_create(
@@ -44,15 +44,19 @@ class Command(BaseCommand):
                     'is_staff': True,
                 }
             )
-            u.set_password('Bifpcl@2026!')
+            u.first_name = fname
+            u.last_name = lname
+            u.email = email
             u.groups.add(sup_group)
+            if created:
+                u.set_password('Bifpcl@2026!')
             u.save()
-            self.stdout.write(f"Synced Supervisor: {uname}")
+            self.stdout.write(f"Synced Supervisor: {uname} ({fname} {lname} <{email}>)")
 
-        # 3. Create 2 Managers (1 Assistant Manager, 1 Deputy Manager)
+        # 3. Create 2 Managers: Assistant Manager Kasad and Deputy Manager Tanvir
         managers_data = [
-            ('asst_manager', 'Engr. Kazi Mahfuzur', 'Rahman', 'kazi.am@bifpcl.com'),
-            ('deputy_manager', 'Engr. Md. Tariqul', 'Hasan', 'tariqul.dm@bifpcl.com'),
+            ('asst_manager', 'Kasad', 'Ullah', 'kasad.am@bifpcl.com'),
+            ('deputy_manager', 'Tanvir', 'Islam', 'tanvir.dm@bifpcl.com'),
         ]
         for uname, fname, lname, email in managers_data:
             u, created = User.objects.get_or_create(
@@ -64,10 +68,14 @@ class Command(BaseCommand):
                     'is_staff': True,
                 }
             )
-            u.set_password('Bifpcl@2026!')
+            u.first_name = fname
+            u.last_name = lname
+            u.email = email
             u.groups.add(mgr_group)
+            if created:
+                u.set_password('Bifpcl@2026!')
             u.save()
-            self.stdout.write(f"Synced Manager: {uname}")
+            self.stdout.write(f"Synced Manager: {uname} ({fname} {lname} <{email}>)")
 
         # 4. Create 14 IT Team Members
         self.stdout.write("\n--- Seeding 14 IT Team Members (Attended By) ---")

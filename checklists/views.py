@@ -9,6 +9,7 @@ from .models import TeamMember, ChecklistTemplate, ChecklistSubmission
 
 # pyrefly: ignore [missing-import]
 from .rbac import supervisor_required, manager_required, is_supervisor, is_manager
+from .emails import send_submission_notification_to_supervisors, send_forwarded_notification_to_managers
 import json
 
 
@@ -352,6 +353,9 @@ def checklist_form(request, template_id):
         )
         submission.attended_by.set(attended_by_ids)
 
+        # Trigger email notification to Shift IT Supervisors
+        send_submission_notification_to_supervisors(submission, request=request)
+
         messages.success(request, f"Checklist submitted successfully! Tracking Reference: {submission.tracking_no}")
         return redirect('submission_success', tracking_no=submission.tracking_no)
 
@@ -396,6 +400,9 @@ def checklist_edit(request, submission_id):
         submission.submitted_at = timezone.now()
         submission.save()
         submission.attended_by.set(attended_by_ids)
+
+        # Trigger email notification to Shift IT Supervisors
+        send_submission_notification_to_supervisors(submission, request=request)
 
         messages.success(
             request,
@@ -477,6 +484,10 @@ def supervisor_review(request, submission_id):
             submission.supervised_at = timezone.now()
             submission.supervisor_remarks = remarks
             submission.save()
+
+            # Trigger email notification to Assistant / Deputy Managers
+            send_forwarded_notification_to_managers(submission, request=request)
+
             messages.success(request, f"Checklist {submission.tracking_no} successfully reviewed and FORWARDED to Manager Approval Queue.")
             return redirect('supervisor_dashboard')
 

@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User, Group
 from checklists.models import TeamMember, ChecklistTemplate, ChecklistSubmission
 from django.utils import timezone
+from django.core import mail
 
 
 class BIFPCLWorkflowTests(TestCase):
@@ -13,16 +14,43 @@ class BIFPCLWorkflowTests(TestCase):
         self.sup_group = Group.objects.create(name='Supervisor')
         self.mgr_group = Group.objects.create(name='Manager')
 
-        # Users
-        self.supervisor = User.objects.create_user(
-            username='sup1', password='Password123!', first_name='Rafiqul', last_name='Islam'
+        # Users - 3 Supervisors: Sabbir, Swarup, Ramjan
+        self.supervisor_sabbir = User.objects.create_user(
+            username='sabbir', password='Password123!', first_name='Sabbir', last_name='Ahmen',
+            email='sabbir.supervisor@bifpcl.com'
         )
-        self.supervisor.groups.add(self.sup_group)
+        self.supervisor_sabbir.groups.add(self.sup_group)
 
-        self.manager = User.objects.create_user(
-            username='mgr1', password='Password123!', first_name='Kazi', last_name='Rahman'
+        self.supervisor_swarup = User.objects.create_user(
+            username='swarup', password='Password123!', first_name='Swarup', last_name='Mohon',
+            email='swarup.supervisor@bifpcl.com'
         )
-        self.manager.groups.add(self.mgr_group)
+        self.supervisor_swarup.groups.add(self.sup_group)
+
+        self.supervisor_ramjan = User.objects.create_user(
+            username='ramjan', password='Password123!', first_name='Ramjan', last_name='Ali',
+            email='ramjan.supervisor@bifpcl.com'
+        )
+        self.supervisor_ramjan.groups.add(self.sup_group)
+
+        # Primary supervisor reference for test cases
+        self.supervisor = self.supervisor_sabbir
+
+        # Users - 2 Managers: Assistant Manager Kasad and Deputy Manager Tanvir
+        self.asst_manager = User.objects.create_user(
+            username='kasad', password='Password123!', first_name='Kasad', last_name='Ullah',
+            email='kasad.am@bifpcl.com'
+        )
+        self.asst_manager.groups.add(self.mgr_group)
+
+        self.deputy_manager = User.objects.create_user(
+            username='tanvir', password='Password123!', first_name='Tanvir', last_name='Islam',
+            email='tanvir.dm@bifpcl.com'
+        )
+        self.deputy_manager.groups.add(self.mgr_group)
+
+        # Primary manager reference for test cases
+        self.manager = self.asst_manager
 
         # Team Member
         self.team_member = TeamMember.objects.create(
@@ -108,14 +136,14 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertIn('/login/', resp_mgr.url)
 
         # Supervisor cannot access Manager dashboard
-        self.client.login(username='sup1', password='Password123!')
+        self.client.login(username='sabbir', password='Password123!')
         resp_mgr_as_sup = self.client.get(reverse('manager_dashboard'))
         self.assertEqual(resp_mgr_as_sup.status_code, 302)
         self.assertEqual(resp_mgr_as_sup.url, reverse('supervisor_dashboard'))
 
         # Manager cannot access Supervisor dashboard
         self.client.logout()
-        self.client.login(username='mgr1', password='Password123!')
+        self.client.login(username='kasad', password='Password123!')
         resp_sup_as_mgr = self.client.get(reverse('supervisor_dashboard'))
         self.assertEqual(resp_sup_as_mgr.status_code, 302)
         self.assertEqual(resp_sup_as_mgr.url, reverse('manager_dashboard'))
@@ -136,7 +164,7 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertEqual(sub.status, 'SUBMITTED')
 
         # 2. Supervisor reviews and forwards
-        self.client.login(username='sup1', password='Password123!')
+        self.client.login(username='sabbir', password='Password123!')
         forward_resp = self.client.post(
             reverse('supervisor_review', args=[sub.id]),
             data={'action': 'forward', 'supervisor_remarks': 'Checked live feeds, all OK.'}
@@ -151,7 +179,7 @@ class BIFPCLWorkflowTests(TestCase):
 
         # 3. Manager reviews and gives final approval
         self.client.logout()
-        self.client.login(username='mgr1', password='Password123!')
+        self.client.login(username='kasad', password='Password123!')
         approve_resp = self.client.post(
             reverse('manager_approve', args=[sub.id]),
             data={'action': 'approve', 'manager_remarks': 'Sign-off complete.'}
@@ -167,8 +195,8 @@ class BIFPCLWorkflowTests(TestCase):
         print_resp = self.client.get(reverse('checklist_print', args=[sub.id]))
         self.assertEqual(print_resp.status_code, 200)
         self.assertContains(print_resp, self.team_member.name)
-        self.assertContains(print_resp, 'Rafiqul Islam')
-        self.assertContains(print_resp, 'Kazi Rahman')
+        self.assertContains(print_resp, self.supervisor.get_full_name())
+        self.assertContains(print_resp, self.manager.get_full_name())
         self.assertContains(print_resp, 'BIFPCL/IT/F/01')
 
     def test_returned_checklist_edit_and_resubmit_workflow(self):
@@ -195,7 +223,7 @@ class BIFPCLWorkflowTests(TestCase):
         sub.attended_by.add(self.team_member)
 
         # 2. Supervisor returns it for correction
-        self.client.login(username='sup1', password='Password123!')
+        self.client.login(username='sabbir', password='Password123!')
         return_resp = self.client.post(
             reverse('supervisor_review', args=[sub.id]),
             data={'action': 'return', 'supervisor_remarks': 'Please verify camera tag CAM-GATE-01 and update action taken.'}
@@ -272,7 +300,7 @@ class BIFPCLWorkflowTests(TestCase):
         sub.attended_by.add(self.team_member)
 
         # 1. Supervisor forwards without remarks
-        self.client.login(username='sup1', password='Password123!')
+        self.client.login(username='sabbir', password='Password123!')
         review_page = self.client.get(reverse('supervisor_review', args=[sub.id]))
         self.assertEqual(review_page.status_code, 200)
         self.assertContains(review_page, '(Optional)')
@@ -290,7 +318,7 @@ class BIFPCLWorkflowTests(TestCase):
 
         # 2. Manager approves without remarks
         self.client.logout()
-        self.client.login(username='mgr1', password='Password123!')
+        self.client.login(username='kasad', password='Password123!')
         approval_page = self.client.get(reverse('manager_approve', args=[sub.id]))
         self.assertEqual(approval_page.status_code, 200)
         self.assertContains(approval_page, '(Optional)')
@@ -907,7 +935,7 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertContains(print_resp, 'Materials and Warranty')
 
         # 5. Supervisor Review & Forward
-        self.client.login(username='sup1', password='Password123!')
+        self.client.login(username='sabbir', password='Password123!')
         rev_resp = self.client.post(reverse('supervisor_review', args=[sub.id]), data={
             'action': 'forward',
             'supervisor_remarks': 'OFC OTDR traces verified within standard limits.'
@@ -917,7 +945,7 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertEqual(sub.status, 'FORWARDED')
 
         # 6. Manager Final Approval
-        self.client.login(username='mgr1', password='Password123!')
+        self.client.login(username='kasad', password='Password123!')
         app_resp = self.client.post(reverse('manager_approve', args=[sub.id]), data={
             'action': 'approve',
             'manager_remarks': 'Approved for commissioning and link activation.'
@@ -926,4 +954,116 @@ class BIFPCLWorkflowTests(TestCase):
         sub.refresh_from_db()
         self.assertEqual(sub.status, 'APPROVED')
         self.assertIsNotNone(sub.approved_at)
+
+    def test_email_notifications_on_submit_and_forward(self):
+        """
+        Verify that:
+        1. When attendee submits form, an email is sent to all 3 active Supervisors:
+           - Sabbir (sabbir.supervisor@bifpcl.com)
+           - Swarup (swarup.supervisor@bifpcl.com)
+           - Ramjan (ramjan.supervisor@bifpcl.com)
+        2. When supervisor reviews and forwards it, an email is sent to active Managers:
+           - Assistant Manager Kasad (kasad.am@bifpcl.com)
+           - Deputy Manager Tanvir (tanvir.dm@bifpcl.com)
+        """
+        mail.outbox = []
+
+        # 1. Attendee submits checklist
+        post_data = {
+            'attended_by': [self.team_member.id],
+            'work_request_no': 'WR-MAIL-TEST-01',
+            'report_date': '2026-09-27',
+            'eq_camera_id': 'CAM-SUB-01',
+            'eq_location': 'Main Switchyard',
+            'diag_status_1': 'Yes',
+            'diag_remarks_1': 'All clear',
+            'fault_selected': 'minor',
+            'action_taken_details': 'Resolved loose patch cord.',
+            'verification_checks': ['Camera online and live view stable'],
+            'final_status': 'Restored and Closed',
+        }
+        submit_resp = self.client.post(reverse('checklist_form', args=[self.template.id]), data=post_data)
+        self.assertEqual(submit_resp.status_code, 302)
+
+        # Check that 1 email was dispatched containing all 3 supervisors in recipient list
+        self.assertEqual(len(mail.outbox), 1)
+        sup_email = mail.outbox[0]
+        self.assertIn('sabbir.supervisor@bifpcl.com', sup_email.to)
+        self.assertIn('swarup.supervisor@bifpcl.com', sup_email.to)
+        self.assertIn('ramjan.supervisor@bifpcl.com', sup_email.to)
+        self.assertIn('New Checklist Awaiting Review', sup_email.subject)
+        self.assertIn('WR-MAIL-TEST-01', sup_email.body)
+        self.assertIn('supervisor/review', sup_email.body)
+
+        sub = ChecklistSubmission.objects.get(work_request_no='WR-MAIL-TEST-01')
+
+        # 2. Supervisor reviews and forwards checklist (e.g., Sabbir)
+        self.client.login(username='sabbir', password='Password123!')
+        forward_resp = self.client.post(reverse('supervisor_review', args=[sub.id]), data={
+            'action': 'forward',
+            'supervisor_remarks': 'Checked configuration and verified online status.'
+        })
+        self.assertEqual(forward_resp.status_code, 302)
+
+        # Check that 2nd email was dispatched containing both managers (Kasad and Tanvir)
+        self.assertEqual(len(mail.outbox), 2)
+        mgr_email = mail.outbox[1]
+        self.assertIn('kasad.am@bifpcl.com', mgr_email.to)
+        self.assertIn('tanvir.dm@bifpcl.com', mgr_email.to)
+        self.assertIn('Checklist Forwarded for Final Approval', mgr_email.subject)
+        self.assertIn(sub.tracking_no, mgr_email.subject)
+        self.assertIn('Checked configuration and verified online status.', mgr_email.body)
+        self.assertIn('manager/approve', mgr_email.body)
+
+    def test_all_supervisors_and_managers_individual_actions(self):
+        """
+        Verify that all 3 supervisors (Sabbir, Swarup, Ramjan) and both managers
+        (Assistant Manager Kasad, Deputy Manager Tanvir) can independently review and approve.
+        """
+        # Test Supervisor Swarup reviewing and forwarding
+        sub1 = ChecklistSubmission.objects.create(
+            template=self.template,
+            work_request_no='WR-SWARUP-01',
+            status='SUBMITTED'
+        )
+        sub1.attended_by.add(self.team_member)
+        self.client.login(username='swarup', password='Password123!')
+        resp1 = self.client.post(reverse('supervisor_review', args=[sub1.id]), data={
+            'action': 'forward',
+            'supervisor_remarks': 'Reviewed by Swarup Mohon'
+        })
+        self.assertEqual(resp1.status_code, 302)
+        sub1.refresh_from_db()
+        self.assertEqual(sub1.status, 'FORWARDED')
+        self.assertEqual(sub1.supervised_by, self.supervisor_swarup)
+
+        # Test Deputy Manager Tanvir reviewing and approving
+        self.client.logout()
+        self.client.login(username='tanvir', password='Password123!')
+        resp2 = self.client.post(reverse('manager_approve', args=[sub1.id]), data={
+            'action': 'approve',
+            'manager_remarks': 'Approved by Deputy Manager Tanvir Islam'
+        })
+        self.assertEqual(resp2.status_code, 302)
+        sub1.refresh_from_db()
+        self.assertEqual(sub1.status, 'APPROVED')
+        self.assertEqual(sub1.approved_by, self.deputy_manager)
+
+        # Test Supervisor Ramjan reviewing and returning
+        sub2 = ChecklistSubmission.objects.create(
+            template=self.template,
+            work_request_no='WR-RAMJAN-01',
+            status='SUBMITTED'
+        )
+        sub2.attended_by.add(self.team_member)
+        self.client.logout()
+        self.client.login(username='ramjan', password='Password123!')
+        resp3 = self.client.post(reverse('supervisor_review', args=[sub2.id]), data={
+            'action': 'return',
+            'supervisor_remarks': 'Returned by Ramjan Ali for verification'
+        })
+        self.assertEqual(resp3.status_code, 302)
+        sub2.refresh_from_db()
+        self.assertEqual(sub2.status, 'RETURNED')
+        self.assertEqual(sub2.supervisor_remarks, 'Returned by Ramjan Ali for verification')
 
