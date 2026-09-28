@@ -43,30 +43,38 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
                     <li class="nav-item">
                         <a class="nav-link text-white fw-semibold px-3" href="{% url 'main_dashboard' %}">
-                            <i class="bi bi-camera-video-fill me-1 text-warning"></i> CCTV Checklist
+                            <i class="bi bi-grid-3x3-gap-fill me-1 text-warning"></i> All Checklists
                         </a>
                     </li>
 
                     {% if user.is_authenticated %}
+
+                    {% if not user_is_supervisor and not user_is_manager and not user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 hover-text-white" href="{% url 'member_dashboard' %}">
+                            <i class="bi bi-speedometer2 me-1 text-info"></i> My Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if user_is_supervisor or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link text-white-50 px-3 hover-text-white" href="{% url 'supervisor_dashboard' %}">
-                            <i class="bi bi-shield-check me-1"></i> Supervisor Queue
+                            <i class="bi bi-shield-check me-1 text-warning"></i> Supervisor Queue
                         </a>
                     </li>
                     {% endif %}
                     {% if user_is_manager or user.is_superuser %}
                     <li class="nav-item">
                         <a class="nav-link text-white-50 px-3 hover-text-white" href="{% url 'manager_dashboard' %}">
-                            <i class="bi bi-patch-check-fill me-1"></i> Manager Approval
+                            <i class="bi bi-patch-check-fill me-1 text-success"></i> Manager Approval
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50 px-3 hover-text-white" href="{% url 'audit_archive' %}">
+                            <i class="bi bi-file-earmark-bar-graph me-1 text-info"></i> Reports &amp; Archive
                         </a>
                     </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link text-white-50 px-3 hover-text-white" href="{% url 'audit_archive' %}">
-                            <i class="bi bi-archive-fill me-1"></i> Audit Archive
-                        </a>
-                    </li>
                     {% endif %}
                 </ul>
 
@@ -78,25 +86,52 @@
                             class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1"
                             type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle fs-6"></i>
-                            <span>{{ user.first_name|default:user.username }}</span>
+                            <span>{{ user_team_profile.name|default:user.first_name|default:user.username }}</span>
                             {% if user.is_superuser %}
                             <span class="badge bg-danger">Admin</span>
+                            {% elif user_is_manager %}
+                            <span class="badge bg-success">Management</span>
+                            {% elif user_is_supervisor %}
+                            <span class="badge bg-warning text-dark">Supervisor</span>
+                            {% elif user_team_profile %}
+                            <span class="badge bg-info text-dark">{{ user_team_profile.employee_id }}</span>
                             {% elif user.groups.all.0 %}
-                            <span class="badge bg-success">{{ user.groups.all.0.name }}</span>
+                            <span class="badge bg-primary">{{ user.groups.all.0.name }}</span>
                             {% endif %}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                             <li class="dropdown-header fw-bold text-dark">
-                                {{ user.get_full_name|default:user.username }}
-                                <div class="small text-muted fw-normal">{{ user.email }}</div>
+                                {{ user_team_profile.name|default:user.get_full_name|default:user.username }}
+                                {% if user_team_profile.designation %}
+                                <div class="text-primary small fw-semibold">{{ user_team_profile.designation }}</div>
+                                {% endif %}
+                                <div class="small text-muted fw-normal">{{ user_team_profile.email|default:user.email }}
+                                </div>
                             </li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            <li><a class="dropdown-item" href="{% url 'role_redirect' %}"><i
-                                        class="bi bi-speedometer2 me-2"></i>My Dashboard</a></li>
+                            {% if not user_is_supervisor and not user_is_manager and not user.is_superuser %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'member_dashboard' %}">
+                                    <i class="bi bi-speedometer2 me-2 text-primary"></i>
+                                    My Personal Dashboard
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if user_is_supervisor or user.is_superuser %}
+                            <li><a class="dropdown-item" href="{% url 'supervisor_dashboard' %}"><i
+                                        class="bi bi-shield-check me-2 text-warning"></i>Supervisor Review Queue</a>
+                            </li>
+                            {% endif %}
+                            {% if user_is_manager or user.is_superuser %}
+                            <li><a class="dropdown-item" href="{% url 'manager_dashboard' %}"><i
+                                        class="bi bi-patch-check-fill me-2 text-success"></i>Management Approval
+                                    Center</a></li>
                             <li><a class="dropdown-item" href="{% url 'audit_archive' %}"><i
-                                        class="bi bi-file-earmark-text me-2"></i>Audit Trail</a></li>
+                                        class="bi bi-file-earmark-bar-graph me-2 text-info"></i>Operations Reports &amp;
+                                    Archive</a></li>
+                            {% endif %}
                             {% if user.is_superuser %}
                             <li><a class="dropdown-item" href="/admin/" target="_blank"><i
                                         class="bi bi-gear-fill me-2"></i>Django Admin</a></li>
@@ -115,8 +150,8 @@
                     </div>
                     {% else %}
                     <a href="{% url 'login' %}"
-                        class="btn btn-sm btn-light fw-bold text-dark rounded-pill px-3 shadow-sm">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Management Login
+                        class="btn btn-sm btn-warning fw-bold text-dark rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> IT Staff &amp; Management Login
                     </a>
                     {% endif %}
                 </div>
@@ -171,13 +206,13 @@
 
     <!-- Global DataTables Auto-Initializer -->
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             if (typeof $.fn.DataTable === 'undefined') {
                 console.warn("DataTables library not available");
                 return;
             }
 
-            $('.bifpcl-datatable').each(function() {
+            $('.bifpcl-datatable').each(function () {
                 var $table = $(this);
                 if (!$.fn.DataTable.isDataTable(this)) {
                     var orderCol = $table.data('order-col') !== undefined ? parseInt($table.data('order-col')) : 0;
@@ -214,7 +249,7 @@
                             autoWidth: false,
                             responsive: true
                         });
-                    } catch(err) {
+                    } catch (err) {
                         console.error("DataTables init error on table", this, err);
                     }
                 }

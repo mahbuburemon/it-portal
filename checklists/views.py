@@ -1,16 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Count, Q
+import csv
+import json
 
-# pyrefly: ignore [missing-import]
 from .models import TeamMember, ChecklistTemplate, ChecklistSubmission
-
-# pyrefly: ignore [missing-import]
 from .rbac import supervisor_required, manager_required, is_supervisor, is_manager
 from .emails import send_submission_notification_to_supervisors, send_forwarded_notification_to_managers
-import json
 
 
 # ==========================================
@@ -254,7 +253,7 @@ def _extract_submission_data(request, template_obj):
     }
 
 
-def _build_form_context(template_obj, submission=None):
+def _build_form_context(template_obj, submission=None, user=None):
     team_members = TeamMember.objects.filter(is_active=True).order_by('name')
 
     equipment_fields = []
@@ -286,6 +285,8 @@ def _build_form_context(template_obj, submission=None):
     attended_member_ids = []
     if submission:
         attended_member_ids = list(submission.attended_by.values_list('id', flat=True))
+    elif user and hasattr(user, 'team_profile') and user.team_profile:
+        attended_member_ids = [user.team_profile.id]
 
     ofc_data = {}
     if template_obj.is_ofc:
@@ -330,17 +331,22 @@ def _build_form_context(template_obj, submission=None):
     }
 
 
+@login_required
 def checklist_form(request, template_id):
     """
     Interactive online form for any of the 12 BIFPCL Word Checklists.
-    Renders dynamic equipment fields, Yes/No/NA diagnostic checklist,
-    fault classification, spares, and restoration verification.
+    Requires authentication: IT team members must log in before accessing.
     """
     template_obj = get_object_or_404(ChecklistTemplate, id=template_id, is_active=True)
 
     if request.method == 'POST':
         data = _extract_submission_data(request, template_obj)
         attended_by_ids = data.pop('attended_by_ids')
+
+        # Auto-include current member if not explicitly checked
+        team_profile = getattr(request.user, 'team_profile', None)
+        if not attended_by_ids and team_profile:
+            attended_by_ids = [team_profile.id]
 
         if not attended_by_ids:
             messages.error(request, "Please select at least one IT team member who Attended this checklist.")
@@ -349,6 +355,7 @@ def checklist_form(request, template_id):
         submission = ChecklistSubmission.objects.create(
             template=template_obj,
             status='SUBMITTED',
+            submitted_by=request.user,
             **data
         )
         submission.attended_by.set(attended_by_ids)
@@ -359,13 +366,14 @@ def checklist_form(request, template_id):
         messages.success(request, f"Checklist submitted successfully! Tracking Reference: {submission.tracking_no}")
         return redirect('submission_success', tracking_no=submission.tracking_no)
 
-    context = _build_form_context(template_obj)
+    context = _build_form_context(template_obj, user=request.user)
     return render(request, 'checklists/checklist_form.html', context)
 
 
+@login_required
 def checklist_edit(request, submission_id):
     """
-    Allow IT team member to edit and resubmit a checklist that was RETURNED by a supervisor/manager.
+    Allow authenticated IT team member to edit and resubmit a checklist that was RETURNED by a supervisor/manager.
     """
     submission = get_object_or_404(
         ChecklistSubmission.objects.select_related('template', 'supervised_by', 'approved_by').prefetch_related('attended_by'),
@@ -384,6 +392,10 @@ def checklist_edit(request, submission_id):
     if request.method == 'POST':
         data = _extract_submission_data(request, template_obj)
         attended_by_ids = data.pop('attended_by_ids')
+
+        team_profile = getattr(request.user, 'team_profile', None)
+        if not attended_by_ids and team_profile:
+            attended_by_ids = [team_profile.id]
 
         if not attended_by_ids:
             messages.error(request, "Please select at least one IT team member who Attended this checklist.")
@@ -410,7 +422,7 @@ def checklist_edit(request, submission_id):
         )
         return redirect('submission_success', tracking_no=submission.tracking_no)
 
-    context = _build_form_context(template_obj, submission=submission)
+    context = _build_form_context(template_obj, submission=submission, user=request.user)
     return render(request, 'checklists/checklist_form.html', context)
 
 
@@ -432,7 +444,62 @@ def role_redirect(request):
     elif is_supervisor(request.user):
         return redirect('supervisor_dashboard')
     else:
-        return redirect('main_dashboard')
+        return redirect('member_dashboard')
+
+
+# ==========================================
+# STAGE 1: IT TEAM MEMBER PERSONAL DASHBOARD
+# ==========================================
+
+@login_required
+def member_dashboard(request):
+    """
+    Personal Dashboard for IT Team Members:
+    Displays personal profile information, personal submission metrics,
+    returned checklists requiring attention, quick checklist launchpad (all 12 forms),
+    and a comprehensive DataTables view of checklists submitted/attended by the user.
+    """
+    user = request.user
+    team_profile = getattr(user, 'team_profile', None)
+
+    # Resolve all submissions submitted by or attended by this user
+    if team_profile:
+        my_submissions = ChecklistSubmission.objects.filter(
+            Q(submitted_by=user) | Q(attended_by=team_profile)
+        ).distinct()
+    else:
+        my_submissions = ChecklistSubmission.objects.filter(submitted_by=user).distinct()
+
+    my_submissions = my_submissions.select_related(
+        'template', 'supervised_by', 'approved_by', 'submitted_by'
+    ).prefetch_related('attended_by').order_by('-created_at')
+
+    # Personal KPIs
+    total_count = my_submissions.count()
+    pending_count = my_submissions.filter(status='SUBMITTED').count()
+    forwarded_count = my_submissions.filter(status='FORWARDED').count()
+    approved_count = my_submissions.filter(status='APPROVED').count()
+    returned_count = my_submissions.filter(status='RETURNED').count()
+
+    returned_submissions = my_submissions.filter(status='RETURNED')
+
+    # All active checklist templates for quick launchpad
+    templates = ChecklistTemplate.objects.filter(is_active=True).order_by('doc_no')
+    categories = ChecklistTemplate.objects.filter(is_active=True).values_list('category', flat=True).distinct()
+
+    context = {
+        'team_profile': team_profile,
+        'my_submissions': my_submissions,
+        'total_count': total_count,
+        'pending_count': pending_count,
+        'forwarded_count': forwarded_count,
+        'approved_count': approved_count,
+        'returned_count': returned_count,
+        'returned_submissions': returned_submissions,
+        'templates': templates,
+        'categories': categories,
+    }
+    return render(request, 'checklists/member/dashboard.html', context)
 
 
 # ==========================================
@@ -598,11 +665,12 @@ def checklist_print(request, submission_id):
     return render(request, 'checklists/checklist_print.html', {'submission': submission})
 
 
-@login_required
+@manager_required
 def audit_archive(request):
     """
-    Audit log for authorized staff (Supervisors and Managers) to search and filter
-    all checklists by date range, template, technician, and approval status.
+    Management Operations Reports & Audit Archive:
+    Accessible exclusively by Assistant Manager, Deputy Manager, and Administrators.
+    Provides complete search, filtering, metrics, and CSV export for all operational checklists.
     """
     submissions = ChecklistSubmission.objects.select_related('template', 'supervised_by', 'approved_by').prefetch_related('attended_by').order_by('-created_at')
 
@@ -626,8 +694,46 @@ def audit_archive(request):
             Q(attended_by__name__icontains=search_q)
         ).distinct()
 
+    # CSV Report Export for Manager
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="BIFPCL_IT_Operations_Report_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        writer = csv.writer(response)
+        writer.writerow([
+            'Tracking Ref', 'Doc No', 'Checklist Title', 'Category',
+            'Work Request No', 'Report Date', 'Attended By', 'Reported By',
+            'Workflow Status', 'Supervised By', 'Supervised At', 'Supervisor Remarks',
+            'Approved By', 'Approved At', 'Manager Remarks', 'Total Downtime'
+        ])
+        for sub in submissions:
+            attendees = ", ".join([m.name for m in sub.attended_by.all()])
+            writer.writerow([
+                sub.tracking_no,
+                sub.template.doc_no,
+                sub.template.title,
+                sub.template.category,
+                sub.work_request_no,
+                sub.report_date.strftime('%Y-%m-%d') if sub.report_date else '',
+                attendees,
+                sub.reported_by,
+                sub.status,
+                sub.supervised_by_display,
+                sub.supervised_at.strftime('%Y-%m-%d %H:%M') if sub.supervised_at else '',
+                sub.supervisor_remarks,
+                sub.approved_by_display,
+                sub.approved_at.strftime('%Y-%m-%d %H:%M') if sub.approved_at else '',
+                sub.manager_remarks,
+                sub.total_downtime
+            ])
+        return response
+
     templates = ChecklistTemplate.objects.filter(is_active=True).order_by('doc_no')
     team_members = TeamMember.objects.filter(is_active=True).order_by('name')
+
+    total_count = submissions.count()
+    approved_count = submissions.filter(status='APPROVED').count()
+    forwarded_count = submissions.filter(status='FORWARDED').count()
+    submitted_count = submissions.filter(status='SUBMITTED').count()
 
     context = {
         'submissions': submissions,
@@ -637,5 +743,9 @@ def audit_archive(request):
         'selected_status': status,
         'selected_technician': technician_id,
         'search_q': search_q,
+        'total_count': total_count,
+        'approved_count': approved_count,
+        'forwarded_count': forwarded_count,
+        'submitted_count': submitted_count,
     }
     return render(request, 'checklists/archive.html', context)

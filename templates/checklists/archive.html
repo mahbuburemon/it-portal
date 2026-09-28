@@ -8,18 +8,75 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <div class="d-flex align-items-center gap-2">
-                <h1 class="h3 fw-bold text-dark mb-0">IT Checklists & Operations Archive</h1>
-                <span class="badge bg-secondary px-3 py-1 rounded-pill">Audit Trail</span>
+                <h1 class="h3 fw-bold text-dark mb-0"><i class="bi bi-file-earmark-bar-graph text-success me-2"></i>Operations Reports &amp; Audit Archive</h1>
+                <span class="badge bg-success px-3 py-1 rounded-pill"><i class="bi bi-shield-lock-fill me-1"></i>Manager Access Only</span>
             </div>
             <p class="text-secondary small mb-0 mt-1">
-                Centralized, tamper-evident repository for all 12 BIFPCL IT Checklists. Search, filter, and inspect past
-                maintenance and troubleshooting records.
+                Centralized, tamper-evident repository for all 12 BIFPCL IT Checklists. Search, filter, inspect, and export comprehensive operational reports across all departments.
             </p>
         </div>
-        <div>
-            <a href="{% url 'main_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                <i class="bi bi-grid me-1"></i> Public Dashboard
+        <div class="d-flex gap-2">
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=csv" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm fw-semibold">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Report (CSV)
             </a>
+            <a href="{% url 'manager_dashboard' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-patch-check me-1"></i> Manager Approval Center
+            </a>
+            <a href="{% url 'main_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-grid me-1"></i> Forms Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- Manager Summary KPI Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm border-0 bg-white p-3 rounded-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase text-muted">Total Reports</div>
+                        <div class="h3 fw-bold text-dark mb-0">{{ total_count }}</div>
+                        <div class="small text-muted mt-1">Across 12 Checklists</div>
+                    </div>
+                    <div class="fs-2 text-primary opacity-50"><i class="bi bi-files"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm border-0 bg-white p-3 rounded-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase text-muted">Approved &amp; Archived</div>
+                        <div class="h3 fw-bold text-success mb-0">{{ approved_count }}</div>
+                        <div class="small text-muted mt-1">Sign-Off Completed</div>
+                    </div>
+                    <div class="fs-2 text-success opacity-50"><i class="bi bi-check2-all"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm border-0 bg-white p-3 rounded-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase text-muted">Pending Manager</div>
+                        <div class="h3 fw-bold text-primary mb-0">{{ forwarded_count }}</div>
+                        <div class="small text-muted mt-1">Forwarded by Supervisors</div>
+                    </div>
+                    <div class="fs-2 text-primary opacity-50"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm border-0 bg-white p-3 rounded-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-uppercase text-muted">Pending Review</div>
+                        <div class="h3 fw-bold text-warning mb-0">{{ submitted_count }}</div>
+                        <div class="small text-muted mt-1">In Supervisor Queue</div>
+                    </div>
+                    <div class="fs-2 text-warning opacity-50"><i class="bi bi-clock-history"></i></div>
+                </div>
+            </div>
         </div>
     </div>
 

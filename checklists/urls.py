@@ -16,6 +16,9 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('role-redirect/', views.role_redirect, name='role_redirect'),
 
+    # Stage 1: IT Team Member Personal Dashboard
+    path('member/', views.member_dashboard, name='member_dashboard'),
+
     # Stage 2: Supervisor Dashboard & Review
     path('supervisor/', views.supervisor_dashboard, name='supervisor_dashboard'),
     path('supervisor/review/<int:submission_id>/', views.supervisor_review, name='supervisor_review'),

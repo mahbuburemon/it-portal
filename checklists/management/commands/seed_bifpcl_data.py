@@ -77,36 +77,66 @@ class Command(BaseCommand):
             u.save()
             self.stdout.write(f"Synced Manager: {uname} ({fname} {lname} <{email}>)")
 
-        # 4. Create 14 IT Team Members
-        self.stdout.write("\n--- Seeding 14 IT Team Members (Attended By) ---")
+        # 4. Create 14 IT Team Members with Personal Login Accounts
+        self.stdout.write("\n--- Seeding 14 IT Team Members (With Personal Login Accounts) ---")
+        it_group, _ = Group.objects.get_or_create(name='IT Team')
         team_members_data = [
-            ('Md. Al-Amin Hossain', 'IT-EMP-101', 'Senior IT Executive', '+880 1711-000001'),
-            ('Mohammad Shamim Reza', 'IT-EMP-102', 'Assistant IT Engineer', '+880 1711-000002'),
-            ('Farhana Yasmin', 'IT-EMP-103', 'Network Support Engineer', '+880 1711-000003'),
-            ('Shahriar Kabir', 'IT-EMP-104', 'System Administrator', '+880 1711-000004'),
-            ('A.H.M. Kamrul Hasan', 'IT-EMP-105', 'IT Support Specialist', '+880 1711-000005'),
-            ('Nasir Uddin Mahmud', 'IT-EMP-106', 'Hardware & Network Technician', '+880 1711-000006'),
-            ('Rezaul Karim', 'IT-EMP-107', 'CCTV & Surveillance Specialist', '+880 1711-000007'),
-            ('Sajid Bin Alam', 'IT-EMP-108', 'Data Center Associate', '+880 1711-000008'),
-            ('Mehedi Hasan Rony', 'IT-EMP-109', 'Field IT Support Engineer', '+880 1711-000009'),
-            ('Tanzim Ahmed', 'IT-EMP-110', 'Access Control & Telecom Tech', '+880 1711-000010'),
-            ('Anisur Rahman', 'IT-EMP-111', 'Desktop & Peripherals Technician', '+880 1711-000011'),
-            ('Zahidul Islam', 'IT-EMP-112', 'Power & UPS Systems Technician', '+880 1711-000012'),
-            ('Sharmin Akter', 'IT-EMP-113', 'Junior IT Officer', '+880 1711-000013'),
-            ('Imran Hossain', 'IT-EMP-114', 'Network Operations Technician', '+880 1711-000014'),
+            ('alamin', 'Md. Al-Amin', 'Hossain', 'IT-EMP-101', 'Senior IT Executive', '+880 1711-000001', 'alamin@bifpcl.com'),
+            ('shamim', 'Mohammad Shamim', 'Reza', 'IT-EMP-102', 'Assistant IT Engineer', '+880 1711-000002', 'shamim@bifpcl.com'),
+            ('farhana', 'Farhana', 'Yasmin', 'IT-EMP-103', 'Network Support Engineer', '+880 1711-000003', 'farhana@bifpcl.com'),
+            ('shahriar', 'Shahriar', 'Kabir', 'IT-EMP-104', 'System Administrator', '+880 1711-000004', 'shahriar@bifpcl.com'),
+            ('kamrul', 'A.H.M. Kamrul', 'Hasan', 'IT-EMP-105', 'IT Support Specialist', '+880 1711-000005', 'kamrul@bifpcl.com'),
+            ('nasir', 'Nasir Uddin', 'Mahmud', 'IT-EMP-106', 'Hardware & Network Technician', '+880 1711-000006', 'nasir@bifpcl.com'),
+            ('rezaul', 'Rezaul', 'Karim', 'IT-EMP-107', 'CCTV & Surveillance Specialist', '+880 1711-000007', 'rezaul@bifpcl.com'),
+            ('sajid', 'Sajid Bin', 'Alam', 'IT-EMP-108', 'Data Center Associate', '+880 1711-000008', 'sajid@bifpcl.com'),
+            ('rony', 'Mehedi Hasan', 'Rony', 'IT-EMP-109', 'Field IT Support Engineer', '+880 1711-000009', 'rony@bifpcl.com'),
+            ('tanzim', 'Tanzim', 'Ahmed', 'IT-EMP-110', 'Access Control & Telecom Tech', '+880 1711-000010', 'tanzim@bifpcl.com'),
+            ('anisur', 'Anisur', 'Rahman', 'IT-EMP-111', 'Desktop & Peripherals Technician', '+880 1711-000011', 'anisur@bifpcl.com'),
+            ('zahidul', 'Zahidul', 'Islam', 'IT-EMP-112', 'Power & UPS Systems Technician', '+880 1711-000012', 'zahidul@bifpcl.com'),
+            ('sharmin', 'Sharmin', 'Akter', 'IT-EMP-113', 'Junior IT Officer', '+880 1711-000013', 'sharmin@bifpcl.com'),
+            ('imran', 'Imran', 'Hossain', 'IT-EMP-114', 'Network Operations Technician', '+880 1711-000014', 'imran@bifpcl.com'),
         ]
 
-        for name, emp_id, desig, phone in team_members_data:
+        for uname, fname, lname, emp_id, desig, phone, email in team_members_data:
+            # 1. Create or sync Django User account
+            full_name = f"{fname} {lname}".strip()
+            u, u_created = User.objects.get_or_create(
+                username=uname,
+                defaults={
+                    'first_name': fname,
+                    'last_name': lname,
+                    'email': email,
+                    'is_staff': False,
+                }
+            )
+            u.first_name = fname
+            u.last_name = lname
+            u.email = email
+            u.groups.add(it_group)
+            if u_created:
+                u.set_password('Bifpcl@2026!')
+            u.save()
+
+            # 2. Create or sync TeamMember record linked to User
             tm, created = TeamMember.objects.get_or_create(
                 employee_id=emp_id,
                 defaults={
-                    'name': name,
+                    'name': full_name,
                     'designation': desig,
                     'phone': phone,
+                    'email': email,
                     'is_active': True,
+                    'user': u,
                 }
             )
-            self.stdout.write(f"Synced Team Member: {name} ({emp_id})")
+            tm.name = full_name
+            tm.designation = desig
+            tm.phone = phone
+            tm.email = email
+            tm.user = u
+            tm.is_active = True
+            tm.save()
+            self.stdout.write(f"Synced IT Member User: {uname} -> {full_name} ({emp_id})")
 
         # 5. Create 12 Checklist Templates
         self.stdout.write("\n--- Seeding 12 Checklist Templates ---")

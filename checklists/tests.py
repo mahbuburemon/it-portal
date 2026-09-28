@@ -52,13 +52,26 @@ class BIFPCLWorkflowTests(TestCase):
         # Primary manager reference for test cases
         self.manager = self.asst_manager
 
-        # Team Member
+        # IT Team Group & Member User (Stage 1 Authentication)
+        self.it_group = Group.objects.create(name='IT Team')
+        self.member_user = User.objects.create_user(
+            username='alamin', password='Password123!', first_name='Md. Al-Amin', last_name='Hossain',
+            email='alamin@bifpcl.com'
+        )
+        self.member_user.groups.add(self.it_group)
+
+        # Team Member Profile
         self.team_member = TeamMember.objects.create(
+            user=self.member_user,
             name='Md. Al-Amin Hossain',
             employee_id='IT-EMP-101',
             designation='Senior IT Executive',
-            phone='+880 1711-000001'
+            phone='+880 1711-000001',
+            email='alamin@bifpcl.com'
         )
+
+        # Default login as IT team member for form submissions
+        self.client.login(username='alamin', password='Password123!')
 
         # Template
         self.template = ChecklistTemplate.objects.create(
@@ -81,16 +94,35 @@ class BIFPCLWorkflowTests(TestCase):
         )
 
     def test_public_dashboard_accessible_without_login(self):
-        """IT Team Members can access the dashboard and see checklists without login."""
+        """Users can access the public catalog, but unauthenticated users are prompted to log in."""
+        self.client.logout()
         response = self.client.get(reverse('main_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'CCTV Troubleshooting Report')
         self.assertContains(response, 'BIFPCL/IT/F/01')
+        self.assertContains(response, 'Log In to Access Forms')
 
+    def test_authenticated_checklist_submission_and_personal_dashboard(self):
+        """IT Team members must log in to submit forms, and submissions appear on their Personal Dashboard."""
+        self.client.login(username='alamin', password='Password123!')
 
+        # 1. Access member personal dashboard
+        dash_resp = self.client.get(reverse('member_dashboard'))
+        self.assertEqual(dash_resp.status_code, 200)
+        self.assertContains(dash_resp, 'Md. Al-Amin Hossain')
+        self.assertContains(dash_resp, 'Senior IT Executive')
+        self.assertContains(dash_resp, 'IT-EMP-101')
 
-    def test_public_checklist_submission_without_login(self):
-        """IT Team members can select multiple attending technicians and submit without login."""
+        # 2. Role redirect takes IT members to their personal dashboard
+        redir_resp = self.client.get(reverse('role_redirect'))
+        self.assertEqual(redir_resp.status_code, 302)
+        self.assertEqual(redir_resp.url, reverse('member_dashboard'))
+
+        # 3. Open checklist form - name is auto-preselected
+        form_get = self.client.get(reverse('checklist_form', args=[self.template.id]))
+        self.assertEqual(form_get.status_code, 200)
+
+        # 4. Submit form
         self.team_member2 = TeamMember.objects.create(
             name='Mohammad Shamim Reza',
             employee_id='IT-EMP-102',
@@ -114,9 +146,10 @@ class BIFPCLWorkflowTests(TestCase):
         response = self.client.post(reverse('checklist_form', args=[self.template.id]), data=post_data)
         self.assertEqual(response.status_code, 302)
 
-        # Verify submission in database
+        # Verify submission in database has submitted_by set to alamin
         sub = ChecklistSubmission.objects.get(work_request_no='WR-999')
         self.assertEqual(sub.status, 'SUBMITTED')
+        self.assertEqual(sub.submitted_by, self.member_user)
         self.assertEqual(sub.attended_by.count(), 2)
         self.assertIn(self.team_member, sub.attended_by.all())
         self.assertIn(self.team_member2, sub.attended_by.all())
@@ -124,9 +157,26 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertIsNone(sub.supervised_by)
         self.assertIsNone(sub.approved_by)
 
+        # 5. Check submission appears on member dashboard
+        dash_after = self.client.get(reverse('member_dashboard'))
+        self.assertEqual(dash_after.status_code, 200)
+        self.assertContains(dash_after, sub.tracking_no)
+        self.assertContains(dash_after, 'WR-999')
+
     def test_rbac_security_boundaries(self):
-        """Anonymous and unauthorized users are prevented from supervisor and manager views."""
-        # Anonymous access blocked
+        """Anonymous users cannot access checklist forms, supervisor queue, or manager queue."""
+        self.client.logout()
+
+        # Anonymous access blocked to checklist forms and personal dashboard
+        resp_form = self.client.get(reverse('checklist_form', args=[self.template.id]))
+        self.assertEqual(resp_form.status_code, 302)
+        self.assertIn('/login/', resp_form.url)
+
+        resp_member = self.client.get(reverse('member_dashboard'))
+        self.assertEqual(resp_member.status_code, 302)
+        self.assertIn('/login/', resp_member.url)
+
+        # Anonymous access blocked to supervisor and manager dashboards
         resp_sup = self.client.get(reverse('supervisor_dashboard'))
         self.assertEqual(resp_sup.status_code, 302)
         self.assertIn('/login/', resp_sup.url)
@@ -247,7 +297,8 @@ class BIFPCLWorkflowTests(TestCase):
         self.assertContains(detail_resp, 'Checklist Returned for Correction')
         self.assertContains(detail_resp, 'Please verify camera tag CAM-GATE-01 and update action taken.')
 
-        # 5. Member accesses the edit form without login
+        # 5. Member logs in and accesses the edit form
+        self.client.login(username='alamin', password='Password123!')
         edit_resp = self.client.get(reverse('checklist_edit', args=[sub.id]))
         self.assertEqual(edit_resp.status_code, 200)
         self.assertContains(edit_resp, 'CAM-WRONG')
@@ -1066,4 +1117,45 @@ class BIFPCLWorkflowTests(TestCase):
         sub2.refresh_from_db()
         self.assertEqual(sub2.status, 'RETURNED')
         self.assertEqual(sub2.supervisor_remarks, 'Returned by Ramjan Ali for verification')
+
+    def test_reports_only_accessible_by_manager(self):
+        """
+        Verify that the central Operations Reports & Audit Archive is exclusively
+        accessible by Managers (AM / DM), and blocked for IT members and Supervisors.
+        Also verify CSV report export functionality for Managers.
+        """
+        # 1. Unauthenticated user is redirected to login
+        self.client.logout()
+        resp_anon = self.client.get(reverse('audit_archive'))
+        self.assertEqual(resp_anon.status_code, 302)
+        self.assertTrue('/login/' in resp_anon.url)
+
+        # 2. IT Team member cannot access reports archive
+        self.client.login(username='alamin', password='Password123!')
+        resp_it = self.client.get(reverse('audit_archive'))
+        self.assertEqual(resp_it.status_code, 302)
+        self.assertNotEqual(resp_it.url, reverse('audit_archive'))
+
+        # 3. Supervisor cannot access reports archive
+        self.client.logout()
+        self.client.login(username='sabbir', password='Password123!')
+        resp_sup = self.client.get(reverse('audit_archive'))
+        self.assertEqual(resp_sup.status_code, 302)
+        self.assertNotEqual(resp_sup.url, reverse('audit_archive'))
+
+        # 4. Manager (Assistant Manager Kasad) CAN access reports archive
+        self.client.logout()
+        self.client.login(username='kasad', password='Password123!')
+        resp_mgr = self.client.get(reverse('audit_archive'))
+        self.assertEqual(resp_mgr.status_code, 200)
+        self.assertContains(resp_mgr, 'Operations Reports')
+        self.assertContains(resp_mgr, 'Manager Access Only')
+
+        # 5. Manager can export CSV report
+        resp_csv = self.client.get(reverse('audit_archive') + '?export=csv')
+        self.assertEqual(resp_csv.status_code, 200)
+        self.assertEqual(resp_csv['Content-Type'], 'text/csv')
+        self.assertTrue('BIFPCL_IT_Operations_Report_' in resp_csv['Content-Disposition'])
+        self.assertContains(resp_csv, 'Tracking Ref,Doc No,Checklist Title')
+
 

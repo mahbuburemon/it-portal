@@ -15,6 +15,12 @@ def is_manager(user):
     return user.groups.filter(name='Manager').exists() or user.is_superuser
 
 
+def is_it_member(user):
+    if not user.is_authenticated:
+        return False
+    return user.groups.filter(name='IT Team').exists() or hasattr(user, 'team_profile') or user.is_superuser
+
+
 def supervisor_required(view_func):
     """Restricts access to Supervisors and Administrators only (Managers cannot access)."""
     @wraps(view_func)

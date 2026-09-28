@@ -5,7 +5,14 @@ import uuid
 
 
 class TeamMember(models.Model):
-    """The 14 IT Team members who attend and submit checklists without login."""
+    """The 14 IT Team members who have individual login accounts and personal dashboards."""
+    user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='team_profile'
+    )
     name = models.CharField(max_length=150)
     employee_id = models.CharField(max_length=50, unique=True)
     designation = models.CharField(max_length=150)
@@ -218,8 +225,15 @@ class ChecklistSubmission(models.Model):
     # Status tracking
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='SUBMITTED')
 
-    # STAGE 1: Attended by (Multiple IT Team Members can attend)
+    # STAGE 1: Attended by & Submitted by
     attended_by = models.ManyToManyField(TeamMember, related_name='submissions')
+    submitted_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='submitted_checklists'
+    )
     submitted_at = models.DateTimeField(auto_now_add=True)
     client_ip = models.GenericIPAddressField(null=True, blank=True)
 

@@ -1,4 +1,4 @@
-from .rbac import is_supervisor, is_manager
+from .rbac import is_supervisor, is_manager, is_it_member
 
 
 def user_roles(request):
@@ -11,8 +11,12 @@ def user_roles(request):
         return {
             'user_is_supervisor': is_supervisor(user),
             'user_is_manager': is_manager(user),
+            'user_is_it_member': is_it_member(user),
+            'user_team_profile': getattr(user, 'team_profile', None),
         }
     return {
         'user_is_supervisor': False,
         'user_is_manager': False,
+        'user_is_it_member': False,
+        'user_team_profile': None,
     }
