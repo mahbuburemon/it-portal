@@ -4,7 +4,7 @@
 {% block title %}{{ template.title }} | BIFPCL IT Checklists{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid container-lg py-3 py-md-4 px-2 px-sm-3 px-md-4">
     <!-- Top breadcrumb / navigation -->
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
         <a href="{% url 'main_dashboard' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
@@ -16,7 +16,7 @@
         </div>
         {% else %}
         <div class="badge bg-light text-secondary border px-3 py-2">
-            <i class="bi bi-shield-check text-success me-1"></i> Public IT Technician Form (No Login Required)
+            <i class="bi bi-shield-lock-fill text-primary me-1"></i> Authorized IT Technician Submission
         </div>
         {% endif %}
     </div>
@@ -76,7 +76,8 @@
             <h1 class="bifpcl-form-title">{{ template.title }}</h1>
 
             <!-- Header & Outage Information Table -->
-            <table class="bifpcl-table">
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table">
                 <tbody>
                     <tr>
                         <th style="width: 20%;">{{ template.job_id_label }}</th>
@@ -175,6 +176,7 @@
                     {% endif %}
                 </tbody>
             </table>
+            </div>
 
             {% if template.is_ofc %}
             <!-- ========================================== -->
@@ -378,179 +380,189 @@
                     <i class="bi bi-plus-circle me-1"></i>Add Row
                 </button>
             </div>
-            <table class="bifpcl-table mb-1" id="materialsTable">
-                <thead>
-                    <tr>
-                        <th style="width: 6%; text-align: center;">Sl.</th>
-                        <th style="width: 44%;">Material / Spare Description</th>
-                        <th style="width: 25%;">Material Code / Model</th>
-                        <th style="width: 10%; text-align: center;">Qty</th>
-                        <th style="width: 15%;">Store Issue Ref.</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if submission and submission.materials_data %}
-                        {% for mat in submission.materials_data %}
+            <div class="table-responsive mb-1">
+                <table class="bifpcl-table mb-1" id="materialsTable">
+                    <thead>
                         <tr>
-                            <td class="text-center">{{ forloop.counter }}</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.desc }}" placeholder="e.g. 24-Port ODF / Splice Protection Sleeve"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.model }}" placeholder="Model / Code"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.ref }}" placeholder="Store Ref"></td>
+                            <th style="width: 6%; text-align: center;">Sl.</th>
+                            <th style="width: 44%;">Material / Spare Description</th>
+                            <th style="width: 25%;">Material Code / Model</th>
+                            <th style="width: 10%; text-align: center;">Qty</th>
+                            <th style="width: 15%;">Store Issue Ref.</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td class="text-center">1</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Fiber Splice Protection Sleeves 60mm"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="24" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">2</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Optical Fiber Joint Closure (Dome type)"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">3</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. SC-LC Duplex Patch Cord 3M SM"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="2" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if submission and submission.materials_data %}
+                            {% for mat in submission.materials_data %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.desc }}" placeholder="e.g. 24-Port ODF / Splice Protection Sleeve"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.model }}" placeholder="Model / Code"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" value="{{ mat.ref }}" placeholder="Store Ref"></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Fiber Splice Protection Sleeves 60mm"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="24" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. Optical Fiber Joint Closure (Dome type)"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">3</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0" placeholder="e.g. SC-LC Duplex Patch Cord 3M SM"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0" placeholder="Model / Code"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="2" min="1" class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0" placeholder="Store Ref"></td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
 
-            <table class="bifpcl-table mb-2">
-                <tbody>
-                    <tr>
-                        <td style="width: 100%;">
-                            <div class="d-flex flex-wrap align-items-center gap-3">
-                                <strong class="me-2">Warranty / AMC:</strong>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="warranty_status" value="Under Warranty"
-                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
-                                </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="warranty_status" value="Under AMC"
-                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
-                                </label>
-                                <label class="form-check-label me-3">
-                                    <input type="radio" name="warranty_status" value="Out of Warranty"
-                                        class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
-                                </label>
-                                <div class="d-inline-flex align-items-center gap-1">
-                                    <span>Vendor / PO Ref.:</span>
-                                    <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
-                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
-                                        style="width: 180px;" placeholder="e.g. PO-2026-IT-109">
+            <div class="table-responsive mb-2">
+                <table class="bifpcl-table mb-2">
+                    <tbody>
+                        <tr>
+                            <td style="width: 100%;">
+                                <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <strong class="me-2">Warranty / AMC:</strong>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="warranty_status" value="Under Warranty"
+                                            class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
+                                    </label>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="warranty_status" value="Under AMC"
+                                            class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
+                                    </label>
+                                    <label class="form-check-label me-3">
+                                        <input type="radio" name="warranty_status" value="Out of Warranty"
+                                            class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
+                                    </label>
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <span>Vendor / PO Ref.:</span>
+                                        <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
+                                            class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                            style="width: 180px;" placeholder="e.g. PO-2026-IT-109">
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Section 6: Remarks (Page 2) -->
             <div class="bifpcl-section-header mt-3">Remarks</div>
-            <table class="bifpcl-table mb-2">
-                <tbody>
-                    <tr>
-                        <td>
-                            <strong>General Remarks:</strong>
-                            <textarea name="ofc_general_remarks" rows="4"
-                                class="form-control form-control-sm border-0 mt-1"
-                                placeholder="Enter route condition, backfilling observations, joint box sealing status, OTDR event notes, or any special recommendations...">{{ ofc_data.general_remarks }}</textarea>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="table-responsive mb-2">
+                <table class="bifpcl-table mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong>General Remarks:</strong>
+                                <textarea name="ofc_general_remarks" rows="4"
+                                    class="form-control form-control-sm border-0 mt-1"
+                                    placeholder="Enter route condition, backfilling observations, joint box sealing status, OTDR event notes, or any special recommendations...">{{ ofc_data.general_remarks }}</textarea>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
             {% else %}
             <!-- Standard Checklists (Forms F/01 to F/11) -->
             <!-- Section 1: Physical or Diagnostic Checklist -->
             <div class="bifpcl-section-header">{{ template.physical_heading }}</div>
-            <table class="bifpcl-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50%;">Inspection Item</th>
-                        <th style="width: 8%; text-align: center;">Yes</th>
-                        <th style="width: 8%; text-align: center;">No</th>
-                        <th style="width: 8%; text-align: center;">N/A</th>
-                        <th style="width: 26%;">Reading / Remarks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in diagnostic_items %}
-                    <tr>
-                        <td>{{ forloop.counter }}. {{ item.text }}</td>
-                        <td class="text-center">
-                            <input type="radio" name="diag_status_{{ item.id }}" value="Yes" class="form-check-input"
-                                {% if item.current_status == 'Yes' or not item.current_status %}checked{% endif %}>
-                        </td>
-                        <td class="text-center">
-                            <input type="radio" name="diag_status_{{ item.id }}" value="No" class="form-check-input"
-                                {% if item.current_status == 'No' %}checked{% endif %}>
-                        </td>
-                        <td class="text-center">
-                            <input type="radio" name="diag_status_{{ item.id }}" value="N/A" class="form-check-input"
-                                {% if item.current_status == 'N/A' %}checked{% endif %}>
-                        </td>
-                        <td>
-                            <input type="text" name="diag_remarks_{{ item.id }}"
-                                class="form-control form-control-sm border-0 p-0"
-                                placeholder="Observed status / value"
-                                value="{{ item.current_remarks|default:'' }}">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Inspection Item</th>
+                            <th style="width: 8%; text-align: center;">Yes</th>
+                            <th style="width: 8%; text-align: center;">No</th>
+                            <th style="width: 8%; text-align: center;">N/A</th>
+                            <th style="width: 26%;">Reading / Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in diagnostic_items %}
+                        <tr>
+                            <td>{{ forloop.counter }}. {{ item.text }}</td>
+                            <td class="text-center">
+                                <input type="radio" name="diag_status_{{ item.id }}" value="Yes" class="form-check-input"
+                                    {% if item.current_status == 'Yes' or not item.current_status %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">
+                                <input type="radio" name="diag_status_{{ item.id }}" value="No" class="form-check-input"
+                                    {% if item.current_status == 'No' %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">
+                                <input type="radio" name="diag_status_{{ item.id }}" value="N/A" class="form-check-input"
+                                    {% if item.current_status == 'N/A' %}checked{% endif %}>
+                            </td>
+                            <td>
+                                <input type="text" name="diag_remarks_{{ item.id }}"
+                                    class="form-control form-control-sm border-0 p-0"
+                                    placeholder="Observed status / value"
+                                    value="{{ item.current_remarks|default:'' }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Section 2: Fault Classification and Action Taken (Troubleshooting Checklists Only) -->
             {% if template.fault_options_schema %}
             <div class="bifpcl-section-header">Fault Classification and Action Taken</div>
-            <table class="bifpcl-table">
-                <thead>
-                    <tr>
-                        <th style="width: 8%; text-align: center;">Select</th>
-                        <th style="width: 42%;">Outcome (tick one only)</th>
-                        <th style="width: 50%;">Details / Action Taken</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for opt in template.fault_options_schema %}
-                    <tr>
-                        <td class="text-center align-middle">
-                            <input type="radio" name="fault_selected" value="{{ opt.key }}" id="fault_{{ opt.key }}"
-                                class="form-check-input"
-                                {% if submission %}
-                                    {% if submission.fault_selected == opt.key %}checked{% endif %}
-                                    {% else %}
-                                    {% if forloop.first %}checked{% endif %}
-                                {% endif %}>
-                        </td>
-                        <td>
-                            <label for="fault_{{ opt.key }}" class="mb-0 cursor-pointer">
-                                <strong>{{ opt.label }}</strong><br>
-                                <span class="text-muted small">{{ opt.desc }}</span>
-                            </label>
-                        </td>
-                        {% if forloop.first %}
-                        <td rowspan="{{ template.fault_options_schema|length }}" class="align-top">
-                            <textarea name="action_taken_details" rows="7" class="form-control form-control-sm border-0"
-                                placeholder="Detailed troubleshooting steps executed, root cause analysis, and corrective actions taken..."
-                                required>{{ submission.action_taken_details|default:'' }}</textarea>
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%; text-align: center;">Select</th>
+                            <th style="width: 42%;">Outcome (tick one only)</th>
+                            <th style="width: 50%;">Details / Action Taken</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for opt in template.fault_options_schema %}
+                        <tr>
+                            <td class="text-center align-middle">
+                                <input type="radio" name="fault_selected" value="{{ opt.key }}" id="fault_{{ opt.key }}"
+                                    class="form-check-input"
+                                    {% if submission %}
+                                        {% if submission.fault_selected == opt.key %}checked{% endif %}
+                                        {% else %}
+                                        {% if forloop.first %}checked{% endif %}
+                                    {% endif %}>
+                            </td>
+                            <td>
+                                <label for="fault_{{ opt.key }}" class="mb-0 cursor-pointer">
+                                    <strong>{{ opt.label }}</strong><br>
+                                    <span class="text-muted small">{{ opt.desc }}</span>
+                                </label>
+                            </td>
+                            {% if forloop.first %}
+                            <td rowspan="{{ template.fault_options_schema|length }}" class="align-top">
+                                <textarea name="action_taken_details" rows="7" class="form-control form-control-sm border-0"
+                                    placeholder="Detailed troubleshooting steps executed, root cause analysis, and corrective actions taken..."
+                                    required>{{ submission.action_taken_details|default:'' }}</textarea>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
 
             <!-- Section 3: Materials, Warranty and Disposal -->
@@ -561,191 +573,198 @@
                     <i class="bi bi-plus-circle me-1"></i>Add Row
                 </button>
             </div>
-            <table class="bifpcl-table" id="materialsTable">
-                <thead>
-                    <tr>
-                        <th style="width: 6%; text-align: center;">Sl.</th>
-                        <th style="width: 44%;">Material / Spare Description</th>
-                        <th style="width: 25%;">Material Code / Model</th>
-                        <th style="width: 10%; text-align: center;">Qty</th>
-                        <th style="width: 15%;">Store Issue Ref.</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if submission and submission.materials_data %}
-                        {% for mat in submission.materials_data %}
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table" id="materialsTable">
+                    <thead>
                         <tr>
-                            <td class="text-center">{{ forloop.counter }}</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
-                                    value="{{ mat.desc }}" placeholder="e.g. Cat6 Patch Cord 3M"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
-                                    value="{{ mat.model }}" placeholder="e.g. Schneider UTP"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1"
-                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
-                                    value="{{ mat.ref }}" placeholder="e.g. SR-401"></td>
+                            <th style="width: 6%; text-align: center;">Sl.</th>
+                            <th style="width: 44%;">Material / Spare Description</th>
+                            <th style="width: 25%;">Material Code / Model</th>
+                            <th style="width: 10%; text-align: center;">Qty</th>
+                            <th style="width: 15%;">Store Issue Ref.</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td class="text-center">1</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="e.g. Cat6 Patch Cord 3M"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="e.g. Schneider UTP"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1"
-                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="e.g. SR-401"></td>
-                        </tr>
-                        <tr>
-                            <td class="text-center">2</td>
-                            <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="Description of spare (if any)"></td>
-                            <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="Code / Model"></td>
-                            <td class="text-center"><input type="number" name="mat_qty[]" min="1"
-                                    class="form-control form-control-sm border-0 p-0 text-center"></td>
-                            <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
-                                    placeholder="Store Ref"></td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if submission and submission.materials_data %}
+                            {% for mat in submission.materials_data %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                        value="{{ mat.desc }}" placeholder="e.g. Cat6 Patch Cord 3M"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                        value="{{ mat.model }}" placeholder="e.g. Schneider UTP"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="{{ mat.qty|default:'1' }}" min="1"
+                                        class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                        value="{{ mat.ref }}" placeholder="e.g. SR-401"></td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td class="text-center">1</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="e.g. Cat6 Patch Cord 3M"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="e.g. Schneider UTP"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" value="1" min="1"
+                                        class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="e.g. SR-401"></td>
+                            </tr>
+                            <tr>
+                                <td class="text-center">2</td>
+                                <td><input type="text" name="mat_desc[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="Description of spare (if any)"></td>
+                                <td><input type="text" name="mat_model[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="Code / Model"></td>
+                                <td class="text-center"><input type="number" name="mat_qty[]" min="1"
+                                        class="form-control form-control-sm border-0 p-0 text-center"></td>
+                                <td><input type="text" name="mat_ref[]" class="form-control form-control-sm border-0 p-0"
+                                        placeholder="Store Ref"></td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
 
-            <table class="bifpcl-table">
-                <tbody>
-                    {% if template.has_disposal %}
-                    <tr>
-                        <td style="width: 100%;">
-                            <div class="d-flex flex-wrap align-items-center gap-3">
-                                <strong class="me-2">Faulty Item Disposal:</strong>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="faulty_item_disposal" value="Store Return"
-                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Store Return' %}checked{% endif %}> Store Return
-                                </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="faulty_item_disposal" value="Condemnation"
-                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Condemnation' %}checked{% endif %}> Condemnation
-                                </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="faulty_item_disposal" value="Warranty Return"
-                                        class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Warranty Return' %}checked{% endif %}> Warranty Return
-                                </label>
-                                <label class="form-check-label me-3">
-                                    <input type="radio" name="faulty_item_disposal" value="N/A"
-                                        class="form-check-input me-1" {% if not submission or submission.faulty_item_disposal == 'N/A' or not submission.faulty_item_disposal %}checked{% endif %}> N/A
-                                </label>
-                                <div class="d-inline-flex align-items-center gap-1">
-                                    <span>Ref. No.:</span>
-                                    <input type="text" name="disposal_ref_no" value="{{ submission.disposal_ref_no|default:'' }}"
-                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
-                                        style="width: 150px;">
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table">
+                    <tbody>
+                        {% if template.has_disposal %}
+                        <tr>
+                            <td style="width: 100%;">
+                                <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <strong class="me-2">Faulty Item Disposal:</strong>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="faulty_item_disposal" value="Store Return"
+                                            class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Store Return' %}checked{% endif %}> Store Return
+                                    </label>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="faulty_item_disposal" value="Condemnation"
+                                            class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Condemnation' %}checked{% endif %}> Condemnation
+                                    </label>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="faulty_item_disposal" value="Warranty Return"
+                                            class="form-check-input me-1" {% if submission.faulty_item_disposal == 'Warranty Return' %}checked{% endif %}> Warranty Return
+                                    </label>
+                                    <label class="form-check-label me-3">
+                                        <input type="radio" name="faulty_item_disposal" value="N/A"
+                                            class="form-check-input me-1" {% if not submission or submission.faulty_item_disposal == 'N/A' or not submission.faulty_item_disposal %}checked{% endif %}> N/A
+                                    </label>
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <span>Ref. No.:</span>
+                                        <input type="text" name="disposal_ref_no" value="{{ submission.disposal_ref_no|default:'' }}"
+                                            class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                            style="width: 150px;">
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <td style="width: 100%;">
-                            <div class="d-flex flex-wrap align-items-center gap-3">
-                                <strong class="me-2">Warranty / AMC:</strong>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="warranty_status" value="Under Warranty"
-                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
-                                </label>
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="warranty_status" value="Under AMC"
-                                        class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
-                                </label>
-                                <label class="form-check-label me-3">
-                                    <input type="radio" name="warranty_status" value="Out of Warranty"
-                                        class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
-                                </label>
-                                <div class="d-inline-flex align-items-center gap-1">
-                                    <span>Vendor / PO Ref.:</span>
-                                    <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
-                                        class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
-                                        style="width: 180px;">
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td style="width: 100%;">
+                                <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <strong class="me-2">Warranty / AMC:</strong>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="warranty_status" value="Under Warranty"
+                                            class="form-check-input me-1" {% if submission.warranty_status == 'Under Warranty' %}checked{% endif %}> Under Warranty
+                                    </label>
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="warranty_status" value="Under AMC"
+                                            class="form-check-input me-1" {% if submission.warranty_status == 'Under AMC' %}checked{% endif %}> Under AMC
+                                    </label>
+                                    <label class="form-check-label me-3">
+                                        <input type="radio" name="warranty_status" value="Out of Warranty"
+                                            class="form-check-input me-1" {% if not submission or submission.warranty_status == 'Out of Warranty' or not submission.warranty_status %}checked{% endif %}> Out of Warranty
+                                    </label>
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <span>Vendor / PO Ref.:</span>
+                                        <input type="text" name="vendor_po_ref" value="{{ submission.vendor_po_ref|default:'' }}"
+                                            class="form-control form-control-sm d-inline-block border-bottom border-0 rounded-0"
+                                            style="width: 180px;">
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
 
             <!-- Section 4: Verification Checklist -->
             <div class="bifpcl-section-header">{{ template.verification_heading }}</div>
-            <table class="bifpcl-table">
-                <tbody>
-                    <tr>
-                        <td style="width: 50%;">
-                            {% for v in template.verification_items_schema %}
-                            {% if forloop.counter0|divisibleby:2 %}
-                            <div class="form-check mb-1">
-                                <input class="form-check-input" type="checkbox" name="verification_checks"
-                                    value="{{ v }}" id="verif_{{ forloop.counter }}"
-                                    {% if not submission or v in submission.verification_checks %}checked{% endif %}>
-                                <label class="form-check-label small" for="verif_{{ forloop.counter }}">
-                                    {{ v }}
-                                </label>
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </td>
-                        <td style="width: 50%;">
-                            {% for v in template.verification_items_schema %}
-                            {% if not forloop.counter0|divisibleby:2 %}
-                            <div class="form-check mb-1">
-                                <input class="form-check-input" type="checkbox" name="verification_checks"
-                                    value="{{ v }}" id="verif_{{ forloop.counter }}"
-                                    {% if not submission or v in submission.verification_checks %}checked{% endif %}>
-                                <label class="form-check-label small" for="verif_{{ forloop.counter }}">
-                                    {{ v }}
-                                </label>
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <div class="d-flex flex-wrap align-items-center gap-3">
-                                <strong class="me-1">Final Status:</strong>
-                                {% for choice in template.final_status_choices %}
-                                <label class="form-check-label me-2">
-                                    <input type="radio" name="final_status" value="{{ choice }}"
-                                        class="form-check-input me-1" {% if not submission and forloop.first or submission.final_status == choice %}checked{% endif %}> {{ choice }}
-                                </label>
-                                {% endfor %}
-                                <div class="d-inline-flex align-items-center gap-1">
-                                    <label class="form-check-label me-1">
-                                        <input type="radio" name="final_status" value="Other"
-                                            class="form-check-input me-1" {% if submission.final_status == 'Other' %}checked{% endif %}> Other:
+            <div class="table-responsive mb-3">
+                <table class="bifpcl-table">
+                    <tbody>
+                        <tr>
+                            <td style="width: 50%;">
+                                {% for v in template.verification_items_schema %}
+                                {% if forloop.counter0|divisibleby:2 %}
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="verification_checks"
+                                        value="{{ v }}" id="verif_{{ forloop.counter }}"
+                                        {% if not submission or v in submission.verification_checks %}checked{% endif %}>
+                                    <label class="form-check-label small" for="verif_{{ forloop.counter }}">
+                                        {{ v }}
                                     </label>
-                                    <input type="text" name="final_status_other" value="{{ submission.final_status_other|default:'' }}"
-                                        class="form-control form-control-sm border-bottom border-0 rounded-0"
-                                        style="width: 140px;">
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">
-                            <strong>Additional Findings / Corrective Action:</strong>
-                            <textarea name="additional_findings" rows="2"
-                                class="form-control form-control-sm border-0 mt-1"
-                                placeholder="Enter any secondary observations, recommendations, or recurring fault notes...">{{ submission.additional_findings|default:'' }}</textarea>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td style="width: 50%;">
+                                {% for v in template.verification_items_schema %}
+                                {% if not forloop.counter0|divisibleby:2 %}
+                                <div class="form-check mb-1">
+                                    <input class="form-check-input" type="checkbox" name="verification_checks"
+                                        value="{{ v }}" id="verif_{{ forloop.counter }}"
+                                        {% if not submission or v in submission.verification_checks %}checked{% endif %}>
+                                    <label class="form-check-label small" for="verif_{{ forloop.counter }}">
+                                        {{ v }}
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div class="d-flex flex-wrap align-items-center gap-3">
+                                    <strong class="me-1">Final Status:</strong>
+                                    {% for choice in template.final_status_choices %}
+                                    <label class="form-check-label me-2">
+                                        <input type="radio" name="final_status" value="{{ choice }}"
+                                            class="form-check-input me-1" {% if not submission and forloop.first or submission.final_status == choice %}checked{% endif %}> {{ choice }}
+                                    </label>
+                                    {% endfor %}
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <label class="form-check-label me-1">
+                                            <input type="radio" name="final_status" value="Other"
+                                                class="form-check-input me-1" {% if submission.final_status == 'Other' %}checked{% endif %}> Other:
+                                        </label>
+                                        <input type="text" name="final_status_other" value="{{ submission.final_status_other|default:'' }}"
+                                            class="form-control form-control-sm border-bottom border-0 rounded-0"
+                                            style="width: 140px;">
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <strong>Additional Findings / Corrective Action:</strong>
+                                <textarea name="additional_findings" rows="2"
+                                    class="form-control form-control-sm border-0 mt-1"
+                                    placeholder="Enter any secondary observations, recommendations, or recurring fault notes...">{{ submission.additional_findings|default:'' }}</textarea>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
             {% endif %}
 
             <!-- Section 5: Official 3-Stage Signature Block -->
             <div class="bifpcl-section-header">Signatures & Approvals</div>
-            <table class="signature-box-table">
+            <div class="table-responsive mb-3">
+                <table class="signature-box-table">
                 <thead>
                     <tr>
                         <th>Attended by</th>
@@ -805,6 +824,7 @@
                     </tr>
                 </tbody>
             </table>
+            </div>
 
             <!-- Document Footer Control -->
             <div class="bifpcl-doc-footer">
@@ -817,14 +837,14 @@
             <!-- Submit Action Bar -->
             <div class="mt-4 pt-3 border-top text-center no-print">
                 {% if is_edit %}
-                <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold shadow-sm rounded-pill text-dark">
+                <button type="submit" class="btn btn-warning btn-lg px-4 px-md-5 fw-bold shadow-sm rounded-pill text-dark w-100 w-sm-auto">
                     <i class="bi bi-arrow-repeat me-2"></i> Save Changes &amp; Resubmit Checklist
                 </button>
                 <div class="small text-muted mt-2">
                     <i class="bi bi-info-circle me-1"></i> Resubmitting will update the report and return it to Stage 2: Supervisor Review queue.
                 </div>
                 {% else %}
-                <button type="submit" class="btn btn-success btn-lg px-5 fw-bold shadow-sm rounded-pill">
+                <button type="submit" class="btn btn-success btn-lg px-4 px-md-5 fw-bold shadow-sm rounded-pill w-100 w-sm-auto">
                     <i class="bi bi-send-check me-2"></i> Submit Checklist for Supervisor Review
                 </button>
                 <div class="small text-muted mt-2">

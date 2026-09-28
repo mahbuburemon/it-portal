@@ -4,7 +4,7 @@
 {% block title %}{{ submission.tracking_no }} | BIFPCL Checklist Detail{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid container-lg py-3 py-md-4 px-2 px-sm-3 px-md-4">
     <!-- Breadcrumb & Actions -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 no-print">
         <div>
@@ -121,7 +121,7 @@
         <!-- Header -->
         <div class="bifpcl-doc-header">
             <div class="d-flex align-items-center justify-content-center gap-3">
-                <img src="{% static 'img/logo.svg' %}" alt="BIFPCL Logo" width="50" height="50">
+                <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="50" height="50">
                 <div>
                     <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
                     <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>
@@ -133,53 +133,55 @@
         <h1 class="bifpcl-form-title">{{ submission.template.title }}</h1>
 
         <!-- Header Table -->
-        <table class="bifpcl-table">
-            <tbody>
-                <tr>
-                    <th style="width: 22%;">{{ submission.template.job_id_label }}</th>
-                    <td style="width: 28%;" class="font-monospace fw-semibold">{{ submission.work_request_no|default:"—" }}</td>
-                    <th style="width: 22%;">{{ submission.template.date_label }}</th>
-                    <td style="width: 28%;">{{ submission.report_date|date:"d M Y" }}</td>
-                </tr>
-                {% for fld in submission.formatted_equipment_fields %}
-                {% if forloop.counter0|divisibleby:2 %}<tr>{% endif %}
-                    <th>{{ fld.label }}</th>
-                    <td>
-                        {% if fld.is_options %}
-                            {% for opt in fld.options %}
-                                <span class="badge {% if fld.value == opt %}bg-success{% else %}bg-light text-secondary border{% endif %} me-1">{{ opt }}</span>
-                            {% endfor %}
-                        {% else %}
-                            {{ fld.value|default:"—" }}
-                        {% endif %}
-                    </td>
-                    {% if forloop.counter|divisibleby:2 or forloop.last %}
-                    {% if forloop.last and not forloop.counter|divisibleby:2 %}<th></th>
-                    <td></td>{% endif %}
-                </tr>{% endif %}
-                {% endfor %}
-                {% if submission.template.has_outage_tracking %}
-                <tr>
-                    <th>{{ submission.template.outage_reported_label }}</th>
-                    <td>{{ submission.outage_reported_at|date:"d-m-Y H:i"|default:"—" }}</td>
-                    <th>{{ submission.template.site_arrival_label }}</th>
-                    <td>{{ submission.site_arrival_at|date:"d-m-Y H:i"|default:"—" }}</td>
-                </tr>
-                <tr>
-                    <th>Restored At</th>
-                    <td>{{ submission.restored_at|date:"d-m-Y H:i"|default:"—" }}</td>
-                    <th>Total Downtime</th>
-                    <td class="fw-bold text-danger">{{ submission.total_downtime|default:"—" }}</td>
-                </tr>
-                <tr>
-                    <th>Reported By</th>
-                    <td>{{ submission.reported_by|default:"—" }}</td>
-                    <th>Contact No.</th>
-                    <td>{{ submission.contact_no|default:"—" }}</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
+        <div class="table-responsive mb-3">
+            <table class="bifpcl-table">
+                <tbody>
+                    <tr>
+                        <th style="width: 22%;">{{ submission.template.job_id_label }}</th>
+                        <td style="width: 28%;" class="font-monospace fw-semibold">{{ submission.work_request_no|default:"—" }}</td>
+                        <th style="width: 22%;">{{ submission.template.date_label }}</th>
+                        <td style="width: 28%;">{{ submission.report_date|date:"d M Y" }}</td>
+                    </tr>
+                    {% for fld in submission.formatted_equipment_fields %}
+                    {% if forloop.counter0|divisibleby:2 %}<tr>{% endif %}
+                        <th>{{ fld.label }}</th>
+                        <td>
+                            {% if fld.is_options %}
+                                {% for opt in fld.options %}
+                                    <span class="badge {% if fld.value == opt %}bg-success{% else %}bg-light text-secondary border{% endif %} me-1">{{ opt }}</span>
+                                {% endfor %}
+                            {% else %}
+                                {{ fld.value|default:"—" }}
+                            {% endif %}
+                        </td>
+                        {% if forloop.counter|divisibleby:2 or forloop.last %}
+                        {% if forloop.last and not forloop.counter|divisibleby:2 %}<th></th>
+                        <td></td>{% endif %}
+                    </tr>{% endif %}
+                    {% endfor %}
+                    {% if submission.template.has_outage_tracking %}
+                    <tr>
+                        <th>{{ submission.template.outage_reported_label }}</th>
+                        <td>{{ submission.outage_reported_at|date:"d-m-Y H:i"|default:"—" }}</td>
+                        <th>{{ submission.template.site_arrival_label }}</th>
+                        <td>{{ submission.site_arrival_at|date:"d-m-Y H:i"|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Restored At</th>
+                        <td>{{ submission.restored_at|date:"d-m-Y H:i"|default:"—" }}</td>
+                        <th>Total Downtime</th>
+                        <td class="fw-bold text-danger">{{ submission.total_downtime|default:"—" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Reported By</th>
+                        <td>{{ submission.reported_by|default:"—" }}</td>
+                        <th>Contact No.</th>
+                        <td>{{ submission.contact_no|default:"—" }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
 
         {% if submission.template.is_ofc %}
         <!-- OFC Section 1: Cable Laying Details -->
@@ -372,165 +374,175 @@
         {% else %}
         <!-- Section 1 -->
         <div class="bifpcl-section-header">{{ submission.template.physical_heading }}</div>
-        <table class="bifpcl-table bifpcl-datatable" id="detailDiagTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
-            <thead>
-                <tr>
-                    <th style="width: 50%;">Inspection Item</th>
-                    <th style="width: 8%; text-align: center;">Yes</th>
-                    <th style="width: 8%; text-align: center;">No</th>
-                    <th style="width: 8%; text-align: center;">N/A</th>
-                    <th style="width: 26%;">Reading / Remarks</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item_id, item in submission.diagnostics_data.items %}
-                <tr>
-                    <td>{{ item.text }}</td>
-                    <td class="text-center">{% if item.status == 'Yes' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                    <td class="text-center">{% if item.status == 'No' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                    <td class="text-center">{% if item.status == 'N/A' %}&#9632;{% else %}&#9633;{% endif %}</td>
-                    <td>{{ item.remarks|default:"" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive mb-3">
+            <table class="bifpcl-table bifpcl-datatable" id="detailDiagTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Inspection Item</th>
+                        <th style="width: 8%; text-align: center;">Yes</th>
+                        <th style="width: 8%; text-align: center;">No</th>
+                        <th style="width: 8%; text-align: center;">N/A</th>
+                        <th style="width: 26%;">Reading / Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item_id, item in submission.diagnostics_data.items %}
+                    <tr>
+                        <td>{{ item.text }}</td>
+                        <td class="text-center">{% if item.status == 'Yes' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                        <td class="text-center">{% if item.status == 'No' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                        <td class="text-center">{% if item.status == 'N/A' %}&#9632;{% else %}&#9633;{% endif %}</td>
+                        <td>{{ item.remarks|default:"" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <!-- Section 2 -->
         {% if submission.template.fault_options_schema %}
         <div class="bifpcl-section-header">Fault Classification and Action Taken</div>
-        <table class="bifpcl-table">
-            <thead>
-                <tr>
-                    <th style="width: 8%; text-align: center;">Select</th>
-                    <th style="width: 44%;">Outcome</th>
-                    <th style="width: 48%;">Details / Action Taken</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for opt in submission.template.fault_options_schema %}
-                <tr>
-                    <td class="text-center">{% if submission.fault_selected == opt.key %}&#9632;{% else %}&#9633;{% endif %}</td>
-                    <td>
-                        <strong>{{ opt.label }}</strong><br>
-                        <span class="small text-muted">{{ opt.desc }}</span>
-                    </td>
-                    {% if forloop.first %}
-                    <td rowspan="{{ submission.template.fault_options_schema|length }}"
-                        class="align-top font-monospace small">
-                        {{ submission.action_taken_details|linebreaks }}
-                    </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive mb-3">
+            <table class="bifpcl-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%; text-align: center;">Select</th>
+                        <th style="width: 44%;">Outcome</th>
+                        <th style="width: 48%;">Details / Action Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for opt in submission.template.fault_options_schema %}
+                    <tr>
+                        <td class="text-center">{% if submission.fault_selected == opt.key %}&#9632;{% else %}&#9633;{% endif %}</td>
+                        <td>
+                            <strong>{{ opt.label }}</strong><br>
+                            <span class="small text-muted">{{ opt.desc }}</span>
+                        </td>
+                        {% if forloop.first %}
+                        <td rowspan="{{ submission.template.fault_options_schema|length }}"
+                            class="align-top font-monospace small">
+                            {{ submission.action_taken_details|linebreaks }}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
 
         <!-- Section 3 -->
         {% if submission.template.materials_enabled and submission.materials_data %}
         <div class="bifpcl-section-header">Materials, Warranty and Disposal</div>
-        <table class="bifpcl-table bifpcl-datatable" id="detailMaterialsTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
-            <thead>
-                <tr>
-                    <th style="width: 6%; text-align: center;">Sl.</th>
-                    <th>Material Description</th>
-                    <th>Model / Code</th>
-                    <th style="width: 8%; text-align: center;">Qty</th>
-                    <th>Store Ref</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in submission.materials_data %}
-                <tr>
-                    <td class="text-center">{{ m.sl }}</td>
-                    <td>{{ m.desc }}</td>
-                    <td>{{ m.model }}</td>
-                    <td class="text-center">{{ m.qty }}</td>
-                    <td>{{ m.ref }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive mb-3">
+            <table class="bifpcl-table bifpcl-datatable" id="detailMaterialsTable" data-order-col="0" data-order-dir="asc" data-page-length="10">
+                <thead>
+                    <tr>
+                        <th style="width: 6%; text-align: center;">Sl.</th>
+                        <th>Material Description</th>
+                        <th>Model / Code</th>
+                        <th style="width: 8%; text-align: center;">Qty</th>
+                        <th>Store Ref</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in submission.materials_data %}
+                    <tr>
+                        <td class="text-center">{{ m.sl }}</td>
+                        <td>{{ m.desc }}</td>
+                        <td>{{ m.model }}</td>
+                        <td class="text-center">{{ m.qty }}</td>
+                        <td>{{ m.ref }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
 
         <!-- Verification Section -->
         <div class="bifpcl-section-header">{{ submission.template.verification_heading }}</div>
-        <table class="bifpcl-table">
-            <tbody>
-                <tr>
-                    <td colspan="2">
-                        <div class="row g-1">
-                            {% for v in submission.template.verification_items_schema %}
-                            <div class="col-sm-6 small">
-                                {% if v in submission.verification_checks %}&#9745;{% else %}&#9744;{% endif %} {{ v }}
+        <div class="table-responsive mb-3">
+            <table class="bifpcl-table">
+                <tbody>
+                    <tr>
+                        <td colspan="2">
+                            <div class="row g-1">
+                                {% for v in submission.template.verification_items_schema %}
+                                <div class="col-sm-6 small">
+                                    {% if v in submission.verification_checks %}&#9745;{% else %}&#9744;{% endif %} {{ v }}
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <strong>Final Status:</strong> <span class="badge bg-success">{{ submission.final_status }}</span>
-                        {% if submission.final_status_other %} ({{ submission.final_status_other }}){% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2">
-                        <strong>Additional Findings:</strong> {{ submission.additional_findings|default:"Nil" }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <strong>Final Status:</strong> <span class="badge bg-success">{{ submission.final_status }}</span>
+                            {% if submission.final_status_other %} ({{ submission.final_status_other }}){% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <strong>Additional Findings:</strong> {{ submission.additional_findings|default:"Nil" }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         {% endif %}
 
         <!-- Signature Block -->
-        <table class="signature-box-table">
-            <thead>
-                <tr>
-                    <th>Attended by</th>
-                    <th>Supervised by</th>
-                    <th>Approved by</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        {% for m in submission.attended_by.all %}
-                        <strong>{{ m.name }}</strong><br>
-                        <span class="text-muted small">{{ m.designation }}</span><br>
-                        {% empty %}
-                        <span class="text-muted fst-italic">None recorded</span><br>
-                        {% endfor %}
-                        <div class="small mt-1">Date: {{ submission.submitted_at|date:"d-m-Y" }}</div>
-                    </td>
+        <div class="table-responsive mb-3">
+            <table class="signature-box-table">
+                <thead>
+                    <tr>
+                        <th>Attended by</th>
+                        <th>Supervised by</th>
+                        <th>Approved by</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            {% for m in submission.attended_by.all %}
+                            <strong>{{ m.name }}</strong><br>
+                            <span class="text-muted small">{{ m.designation }}</span><br>
+                            {% empty %}
+                            <span class="text-muted fst-italic">None recorded</span><br>
+                            {% endfor %}
+                            <div class="small mt-1">Date: {{ submission.submitted_at|date:"d-m-Y" }}</div>
+                        </td>
 
-                    <td>
-                        {% if submission.supervised_by %}
-                        <strong>{{ submission.supervised_by_display }}</strong><br>
-                        <span class="text-muted small">Shift IT Supervisor</span><br>
-                        <div class="small mt-1">Date: {{ submission.supervised_at|date:"d-m-Y" }}</div>
-                        {% if submission.supervisor_remarks %}
-                        <div class="small text-primary mt-1"><em>"{{ submission.supervisor_remarks }}"</em></div>
-                        {% endif %}
-                        {% else %}
-                        <span class="text-muted fst-italic">Pending Supervisor Review</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if submission.approved_by %}
-                        <strong>{{ submission.approved_by_display }}</strong><br>
-                        <span class="text-muted small">Assistant / Deputy Manager</span><br>
-                        <div class="small mt-1">Date: {{ submission.approved_at|date:"d-m-Y" }}</div>
-                        {% if submission.manager_remarks %}
-                        <div class="small text-success mt-1"><em>"{{ submission.manager_remarks }}"</em></div>
-                        {% endif %}
-                        {% else %}
-                        <span class="text-muted fst-italic">Pending Final Approval</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                        <td>
+                            {% if submission.supervised_by %}
+                            <strong>{{ submission.supervised_by_display }}</strong><br>
+                            <span class="text-muted small">Shift IT Supervisor</span><br>
+                            <div class="small mt-1">Date: {{ submission.supervised_at|date:"d-m-Y" }}</div>
+                            {% if submission.supervisor_remarks %}
+                            <div class="small text-primary mt-1"><em>"{{ submission.supervisor_remarks }}"</em></div>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted fst-italic">Pending Supervisor Review</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if submission.approved_by %}
+                            <strong>{{ submission.approved_by_display }}</strong><br>
+                            <span class="text-muted small">Assistant / Deputy Manager</span><br>
+                            <div class="small mt-1">Date: {{ submission.approved_at|date:"d-m-Y" }}</div>
+                            {% if submission.manager_remarks %}
+                            <div class="small text-success mt-1"><em>"{{ submission.manager_remarks }}"</em></div>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted fst-italic">Pending Final Approval</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
         <div class="bifpcl-doc-footer">
             <div><strong>Doc No:</strong> {{ submission.template.doc_no }} &bull; {{ submission.template.revision }}

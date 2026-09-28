@@ -140,6 +140,41 @@
             border-top: 1px solid #000000;
             padding-top: 4px;
         }
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px 6px;
+            }
+            .print-toolbar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+                text-align: center;
+            }
+            .print-toolbar > div {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+            }
+            .print-toolbar span {
+                margin-right: 0 !important;
+            }
+            .bifpcl-doc-paper {
+                padding: 16px 10px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .bifpcl-doc-header h2 {
+                font-size: 11pt;
+            }
+            .bifpcl-doc-header h3 {
+                font-size: 8.5pt;
+            }
+            .bifpcl-form-title {
+                font-size: 11.5pt;
+            }
+        }
+
         @media print {
             body {
                 background: #ffffff;
@@ -184,7 +219,7 @@
         <!-- Header -->
         <div class="bifpcl-doc-header">
             <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
-                <img src="{% static 'img/logo.svg' %}" alt="BIFPCL Logo" width="55" height="55">
+                <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="55" height="55">
                 <div>
                     <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
                     <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>
@@ -426,7 +461,7 @@
         <!-- Header -->
         <div class="bifpcl-doc-header">
             <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
-                <img src="{% static 'img/logo.svg' %}" alt="BIFPCL Logo" width="55" height="55">
+                <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="55" height="55">
                 <div>
                     <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
                     <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>
@@ -608,7 +643,7 @@
         <!-- Header -->
         <div class="bifpcl-doc-header">
             <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
-                <img src="{% static 'img/logo.svg' %}" alt="BIFPCL Logo" width="55" height="55">
+                <img src="{% static 'img/logo.png' %}" alt="BIFPCL Logo" width="55" height="55">
                 <div>
                     <h2>BANGLADESH-INDIA FRIENDSHIP POWER COMPANY (PVT.) LIMITED</h2>
                     <h3>(A Joint Venture of BPDB and NTPC Limited)</h3>

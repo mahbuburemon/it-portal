@@ -118,22 +118,17 @@ class Command(BaseCommand):
             u.save()
 
             # 2. Create or sync TeamMember record linked to User
-            tm, created = TeamMember.objects.get_or_create(
-                employee_id=emp_id,
-                defaults={
-                    'name': full_name,
-                    'designation': desig,
-                    'phone': phone,
-                    'email': email,
-                    'is_active': True,
-                    'user': u,
-                }
-            )
+            tm = TeamMember.objects.filter(user=u).first()
+            if not tm:
+                tm = TeamMember.objects.filter(employee_id=emp_id).first()
+            if not tm:
+                tm = TeamMember(user=u, employee_id=emp_id)
+            tm.user = u
+            tm.employee_id = emp_id
             tm.name = full_name
             tm.designation = desig
             tm.phone = phone
             tm.email = email
-            tm.user = u
             tm.is_active = True
             tm.save()
             self.stdout.write(f"Synced IT Member User: {uname} -> {full_name} ({emp_id})")

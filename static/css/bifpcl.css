@@ -15,6 +15,11 @@
     --bifpcl-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
+html {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background-color: #f1f5f9;
@@ -22,6 +27,8 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    max-width: 100%;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -108,11 +115,15 @@ body {
 .bifpcl-doc-paper {
     background: #ffffff;
     max-width: 900px;
+    width: 100%;
+    box-sizing: border-box;
     margin: 2rem auto;
     padding: 2.5rem 3rem;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
-    border-radius: 4px;
+    border-radius: 8px;
     border: 1px solid #cbd5e1;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .bifpcl-doc-header {
@@ -394,4 +405,272 @@ table.dataTable tbody tr {
 
 table.dataTable tbody tr:hover {
     background-color: #f1f7fd !important;
+}
+
+/* ========================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
+   ======================================================== */
+
+/* General Responsive Utilities */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Breakpoint: Tablets & Small Laptops (max-width: 991.98px) */
+@media (max-width: 991.98px) {
+    .bifpcl-doc-paper {
+        padding: 2rem 1.75rem;
+        margin: 1.5rem auto;
+    }
+
+    .navbar-collapse {
+        background: #082645;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-top: 0.5rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.6rem 0.75rem !important;
+        border-radius: 6px;
+    }
+
+    .navbar-nav .nav-link:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dropdown-menu-end {
+        position: static !important;
+        float: none !important;
+        margin-top: 0.5rem;
+        background-color: #ffffff;
+    }
+}
+
+/* Breakpoint: Tablets & Mobile Landscape (max-width: 767.98px) */
+@media (max-width: 767.98px) {
+    .bifpcl-doc-paper {
+        padding: 1.5rem 1rem;
+        margin: 1rem auto;
+        border-radius: 6px;
+    }
+
+    .bifpcl-doc-header h2 {
+        font-size: 0.95rem;
+        line-height: 1.35;
+    }
+
+    .bifpcl-doc-header h3 {
+        font-size: 0.78rem;
+    }
+
+    .bifpcl-doc-header .web-link {
+        font-size: 0.78rem;
+    }
+
+    .bifpcl-form-title {
+        font-size: 1.15rem;
+        margin: 0.85rem 0;
+    }
+
+    .bifpcl-section-header {
+        font-size: 0.88rem;
+        margin-top: 1rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .bifpcl-table th,
+    .bifpcl-table td {
+        padding: 5px 6px;
+        font-size: 0.8rem;
+    }
+
+    .bifpcl-table input,
+    .bifpcl-table select,
+    .bifpcl-table textarea {
+        font-size: 0.8rem !important;
+    }
+
+    .signature-box-table {
+        min-width: 480px;
+    }
+
+    .signature-box-table th {
+        font-size: 0.78rem;
+        padding: 6px;
+    }
+
+    .signature-box-table td {
+        padding: 8px 6px;
+        height: 85px;
+        font-size: 0.78rem;
+    }
+
+    .bifpcl-doc-footer {
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.7rem;
+        text-align: center;
+    }
+
+    /* DataTables Mobile Controls */
+    .dt-container .dt-layout-row {
+        gap: 0.5rem;
+    }
+
+    .dt-container .dt-search input {
+        min-width: 180px;
+    }
+
+    .btn-action-panel {
+        flex-direction: column;
+        width: 100%;
+    }
+}
+
+/* Breakpoint: Mobile Portrait (max-width: 575.98px) */
+@media (max-width: 575.98px) {
+    body {
+        font-size: 14px;
+    }
+
+    .container, .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .bifpcl-doc-paper {
+        padding: 1rem 0.6rem;
+        margin: 0.75rem auto;
+        border-radius: 4px;
+        border-left: none;
+        border-right: none;
+    }
+
+    .brand-text-title {
+        font-size: 0.92rem;
+    }
+
+    .brand-text-sub {
+        font-size: 0.62rem;
+        max-width: 175px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .navbar-brand img {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .navbar-toggler {
+        padding: 0.25rem 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    /* DataTables Full Stack on Phone */
+    .dt-container {
+        padding: 0.5rem 0.35rem 0.85rem 0.35rem;
+    }
+
+    .dt-container .dt-layout-row {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.4rem;
+    }
+
+    .dt-container .dt-search {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dt-container .dt-search input {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .dt-container .dt-length {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .dt-container .dt-info {
+        text-align: center;
+        font-size: 0.78rem;
+    }
+
+    .dt-container .dt-paging {
+        justify-content: center !important;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .dt-container .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .dt-container .pagination .page-item .page-link {
+        padding: 0.25rem 0.55rem;
+        font-size: 0.75rem;
+    }
+
+    /* Touch buttons */
+    .btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-sm {
+        min-height: 32px;
+    }
+
+    /* Modal / Action Bars */
+    .badge-status {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.55rem;
+    }
+}
+
+/* Breakpoint: Extra Small / Foldable Devices (max-width: 380px) */
+@media (max-width: 380px) {
+    .brand-text-sub {
+        display: none;
+    }
+
+    .bifpcl-doc-header h2 {
+        font-size: 0.82rem;
+    }
+
+    .bifpcl-form-title {
+        font-size: 1rem;
+    }
+
+    .bifpcl-doc-paper {
+        padding: 0.75rem 0.35rem;
+    }
 }
